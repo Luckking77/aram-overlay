@@ -328,14 +328,17 @@ namespace AramOverlay
                         text += " · 近" + member.Recent.Games.ToString() + "场 " +
                             (member.Recent.WinRate * 100.0).ToString("0.0") + "%" +
                             " · " + member.Recent.Kda.ToString("0.0") + "KDA" +
-                            " · 海斗分：" + member.Recent.HaidouScore.ToString() +
+                            "\n海斗分：" + member.Recent.HaidouScore.ToString() +
                             " · " + member.Recent.HaidouRating;
                     }
                     else
                     {
-                        text += " · 近50场 — · 海斗分：--";
+                        text += " · 近50场 —\n海斗分：--";
                     }
-                    badges.Add(new BadgeItem(_config.AllyX, y, text, rate));
+                    BadgeItem item = new BadgeItem(_config.AllyX, y, text, rate);
+                    item.LeftAlign = true;
+                    item.TopAlign = true;
+                    badges.Add(item);
                 }
             }
 
@@ -357,7 +360,10 @@ namespace AramOverlay
                 for (int i = 0; i < _config.AllyRows && i < ally.Length; i++)
                 {
                     double y = _config.AllyFirstY + i * _config.AllyPitchY;
-                    badges.Add(new BadgeItem(_config.AllyX, y, (ally[i] * 100).ToString("0.0") + "%", ally[i]));
+                    BadgeItem item = new BadgeItem(_config.AllyX, y, (ally[i] * 100).ToString("0.0") + "%", ally[i]);
+                    item.LeftAlign = true;
+                    item.TopAlign = true;
+                    badges.Add(item);
                 }
             }
             return badges;

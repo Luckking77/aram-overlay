@@ -648,27 +648,23 @@ namespace AramOverlay
 
         private static string RateHaidou(int score)
         {
-            if (score >= 85)
+            if (score >= 90)
             {
                 return "夯";
             }
-            if (score >= 72)
+            if (score >= 75)
             {
-                return "强";
+                return "顶级";
             }
-            if (score >= 60)
+            if (score >= 55)
             {
-                return "稳";
-            }
-            if (score >= 48)
-            {
-                return "平";
+                return "人上人";
             }
             if (score >= 35)
             {
-                return "弱";
+                return "NPC";
             }
-            return "拉";
+            return "拉完了";
         }
 
         private async Task<string> GetSummonerNameAsync(long summonerId)

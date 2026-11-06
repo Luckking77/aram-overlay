@@ -156,8 +156,12 @@ namespace AramOverlay
                 text.Effect = shadow;
 
                 text.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-                double x = width * badge.XRatio - text.DesiredSize.Width / 2.0;
-                double y = height * badge.YRatio - text.DesiredSize.Height / 2.0;
+                double x = badge.LeftAlign
+                    ? width * badge.XRatio
+                    : width * badge.XRatio - text.DesiredSize.Width / 2.0;
+                double y = badge.TopAlign
+                    ? height * badge.YRatio
+                    : height * badge.YRatio - text.DesiredSize.Height / 2.0;
                 Canvas.SetLeft(text, x);
                 Canvas.SetTop(text, y);
                 _canvas.Children.Add(text);

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -51,8 +52,18 @@ namespace AramOverlay
                     return;
                 }
 
-                OverlayApp app = new OverlayApp(demo);
-                app.Run();
+                bool createdNew;
+                using (Mutex mutex = new Mutex(true, "AramOverlay.SingleInstance", out createdNew))
+                {
+                    if (!createdNew)
+                    {
+                        MessageBox.Show("ARAM Overlay 已经在运行，请使用托盘图标。", "ARAM Overlay");
+                        return;
+                    }
+
+                    OverlayApp app = new OverlayApp(demo);
+                    app.Run();
+                }
             }
             catch (Exception ex)
             {
@@ -77,12 +88,16 @@ namespace AramOverlay
                 double[] bench = new double[] { 0.464, 0.461, 0.547, 0.508, 0.477, 0.502, 0.545, 0.466, 0.510, 0.495 };
                 for (int i = 0; i < bench.Length; i++)
                 {
-                    badges.Add(new BadgeItem(0.289 + i * 0.0456, 0.066, (bench[i] * 100).ToString("0.0") + "%", bench[i]));
+                    badges.Add(new BadgeItem(0.292 + i * 0.0315, 0.090, (bench[i] * 100).ToString("0.0") + "%", bench[i]));
                 }
                 double[] ally = new double[] { 0.513, 0.470, 0.498, 0.522, 0.480 };
                 for (int i = 0; i < ally.Length; i++)
                 {
-                    badges.Add(new BadgeItem(0.038, 0.173 + i * 0.089, (ally[i] * 100).ToString("0.0") + "%", ally[i]));
+                    string allyText = "总胜率" + (ally[i] * 100).ToString("0.0") + "% · 近50场 52.3% · 3.2KDA\n海斗分：60 · 人上人";
+                    BadgeItem item = new BadgeItem(0.155, 0.394 + i * 0.093, allyText, ally[i]);
+                    item.LeftAlign = true;
+                    item.TopAlign = true;
+                    badges.Add(item);
                 }
                 window.SetBadges(badges);
                 System.Windows.Controls.Canvas canvas = window.Content as System.Windows.Controls.Canvas;
