@@ -132,7 +132,7 @@ namespace AramOverlay
                 }
                 else if (id == 4)
                 {
-                    CaptureSnapshot("manual");
+                    CaptureSnapshot("manual", false);
                     handled = true;
                 }
             }
@@ -156,7 +156,7 @@ namespace AramOverlay
             menu.Items.Add(refresh);
 
             WinForms.ToolStripMenuItem snapshot = new WinForms.ToolStripMenuItem("保存当前截图");
-            snapshot.Click += delegate { CaptureSnapshot("tray"); };
+            snapshot.Click += delegate { CaptureSnapshot("tray", false); };
             menu.Items.Add(snapshot);
 
             WinForms.ToolStripMenuItem reload = new WinForms.ToolStripMenuItem("重新加载配置");
@@ -267,7 +267,7 @@ namespace AramOverlay
                 if (!_capturedThisChampSelect)
                 {
                     _capturedThisChampSelect = true;
-                    CaptureSnapshot("auto");
+                    CaptureSnapshot("auto", true);
                 }
 
                 List<BadgeItem> badges = BuildBadges(session);
@@ -341,12 +341,15 @@ namespace AramOverlay
             return badges;
         }
 
-        private void CaptureSnapshot(string prefix)
+        private void CaptureSnapshot(string prefix, bool hideOverlay)
         {
             try
             {
-                _overlay.HideOverlay();
-                System.Threading.Thread.Sleep(150);
+                if (hideOverlay)
+                {
+                    _overlay.HideOverlay();
+                    System.Threading.Thread.Sleep(150);
+                }
 
                 LeagueWindow window = LeagueWindowFinder.Find();
                 int left;
