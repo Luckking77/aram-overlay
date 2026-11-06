@@ -708,6 +708,22 @@ namespace AramOverlay
                         displayName = string.IsNullOrEmpty(tagLine) ? gameName : gameName + "#" + tagLine;
                     }
                 }
+                if (string.IsNullOrEmpty(displayName))
+                {
+                    object nameValue;
+                    if (root.TryGetValue("name", out nameValue) && nameValue != null)
+                    {
+                        displayName = Convert.ToString(nameValue);
+                    }
+                }
+                if (string.IsNullOrEmpty(displayName))
+                {
+                    object summonerNameValue;
+                    if (root.TryGetValue("summonerName", out summonerNameValue) && summonerNameValue != null)
+                    {
+                        displayName = Convert.ToString(summonerNameValue);
+                    }
+                }
                 return displayName;
             }
             catch
