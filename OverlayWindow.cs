@@ -134,7 +134,7 @@ namespace AramOverlay
             _canvas.Children.Clear();
             _canvas.Width = width;
             _canvas.Height = height;
-            double fontSize = Math.Max(12.0, height * GetFontRatio());
+            double fontSize = Math.Max(14.0, height * GetFontRatio());
             FontFamily font = new FontFamily("Segoe UI");
 
             for (int i = 0; i < _badges.Count; i++)

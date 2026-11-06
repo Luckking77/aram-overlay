@@ -300,23 +300,23 @@ namespace AramOverlay
             // 四档客户端尺寸的实测值（1920/1600 来自真实截图，1280/1024 按同比例外推）。
             if (width >= 1800)
             {
-                first = 0.2859;
-                pitch = 0.0331;
+                first = 0.2948;
+                pitch = 0.0453;
             }
             else if (width >= 1440)
             {
-                first = 0.2928;
-                pitch = 0.0353;
+                first = 0.2931;
+                pitch = 0.0466;
             }
             else if (width >= 1150)
             {
-                first = 0.3030;
-                pitch = 0.0387;
+                first = 0.2940;
+                pitch = 0.0475;
             }
             else
             {
-                first = 0.3160;
-                pitch = 0.0429;
+                first = 0.2950;
+                pitch = 0.0490;
             }
         }
 
