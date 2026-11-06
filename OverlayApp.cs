@@ -22,6 +22,8 @@ namespace AramOverlay
         private bool _preview;
         private DateTime _previewUntil;
         private bool _enabled;
+        private int _clientWidth;
+        private int _clientHeight;
         private bool _demo;
         private IntPtr _hotkeyHandle;
         private HwndSource _hotkeySource;
@@ -222,6 +224,9 @@ namespace AramOverlay
                     return;
                 }
 
+                _clientWidth = window.ClientRect.Right - window.ClientRect.Left;
+                _clientHeight = window.ClientRect.Bottom - window.ClientRect.Top;
+
                 if (_demo)
                 {
                     _overlay.SetBadges(BuildPreviewBadges());
@@ -290,6 +295,31 @@ namespace AramOverlay
             }
         }
 
+        private static void GetBenchLayout(int width, out double first, out double pitch)
+        {
+            // 四档客户端尺寸的实测值（1920/1600 来自真实截图，1280/1024 按同比例外推）。
+            if (width >= 1800)
+            {
+                first = 0.2859;
+                pitch = 0.0331;
+            }
+            else if (width >= 1440)
+            {
+                first = 0.2928;
+                pitch = 0.0353;
+            }
+            else if (width >= 1150)
+            {
+                first = 0.3030;
+                pitch = 0.0387;
+            }
+            else
+            {
+                first = 0.3160;
+                pitch = 0.0429;
+            }
+        }
+
         private List<BadgeItem> BuildBadges(ChampSelectState session)
         {
             List<BadgeItem> badges = new List<BadgeItem>();
@@ -298,10 +328,13 @@ namespace AramOverlay
             {
                 benchCount = _config.BenchSlots;
             }
+            double benchFirst;
+            double benchPitch;
+            GetBenchLayout(_clientWidth > 0 ? _clientWidth : 1920, out benchFirst, out benchPitch);
             for (int i = 0; i < benchCount; i++)
             {
                 int championId = session.BenchChampionIds[i];
-                double x = _config.BenchFirstX + i * _config.BenchPitchX;
+                double x = benchFirst + i * benchPitch;
                 double y = _config.BenchY;
                 ChampionStat stat = _data.Get(championId);
                 double? rate = stat == null ? (double?)null : stat.WinRate;

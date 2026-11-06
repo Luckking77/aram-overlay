@@ -656,7 +656,7 @@ namespace AramOverlay
             {
                 return "顶级";
             }
-            if (score >= 55)
+            if (score >= 60)
             {
                 return "人上人";
             }

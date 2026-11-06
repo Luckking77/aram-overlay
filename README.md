@@ -35,7 +35,7 @@ Windows 选人页胜率 Overlay：把 101 国服「海克斯大乱斗」英雄�
 - 50 分为基准；
 - 胜率权重最高，KDA 次之；
 - 不足 50 场按场次扣分，少于 10 场封顶 55；
-- 评价：`夯`（90+）/ `顶级`（75+）/ `人上人`（55+）/ `NPC`（35+）/ `拉完了`（<35）。
+- 评价：`夯`（90+）/ `顶级`（75+）/ `人上人`（60+）/ `NPC`（35+）/ `拉完了`（<35）。
 
 > 本 exe 未签名；如果 SmartScreen 提示，选择“更多信息 → 仍要运行”。
 
@@ -85,13 +85,13 @@ AramOverlayData\overlay.log
   "AllyX": 0.155,
   "AllyFirstY": 0.394,
   "AllyPitchY": 0.093,
-  "BadgeFontRatio": 0.0115,
+  "BadgeFontRatio": 0.0143,
   "ShowAllyRows": true,
   "HideWhenNotForeground": true
 }
 ```
 
-坐标都是相对客户端客户区的比例（0–1）。`BenchPitchX` 是相对宽度的席位间距；`BenchY`、`AllyFirstY`、`AllyPitchY` 是相对高度。若位置有偏移，用托盘「预览 Overlay」对照调整：
+坐标都是相对客户端客户区的比例（0–1）。顶部席位按客户端宽度自动选择四档布局（1024/1280/1600/1920 实测/外推），`BenchFirstX`、`BenchPitchX` 仅作为旧版/预览回退。队友行使用 `AllyX`、`AllyFirstY`、`AllyPitchY`。若位置有偏移，用托盘「预览 Overlay」对照调整：
 
 - `BenchFirstX`：第一个席位中心 X；
 - `BenchPitchX`：席位间距（相对宽度）；
