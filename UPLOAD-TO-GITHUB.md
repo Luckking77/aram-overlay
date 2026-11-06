@@ -41,17 +41,19 @@ https://github.com/Luckking77/aram-overlay
 
 ## 3. 用 git 上传（推荐）
 
-在 **你自己的终端**（不是 DSH 沙箱）执行：
+当前 `aram-overlay` 目录**已经初始化好 git**（分支 `main`，首个 commit `ce15ee7`），你只需要添加远端并 push：
 
 ```powershell
 cd C:\Users\50353\Desktop\dsh\aram-overlay
 
-git init
-git add .
-git commit -m "P0: ARAM champ select overlay"
-
-git branch -M main
 git remote add origin https://github.com/Luckking77/aram-overlay.git
+git push -u origin main
+```
+
+如果 remote 已存在，用：
+
+```powershell
+git remote set-url origin https://github.com/Luckking77/aram-overlay.git
 git push -u origin main
 ```
 
