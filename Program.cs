@@ -93,7 +93,7 @@ namespace AramOverlay
                 double[] ally = new double[] { 0.513, 0.470, 0.498, 0.522, 0.480 };
                 for (int i = 0; i < ally.Length; i++)
                 {
-                    string allyText = "总胜率" + (ally[i] * 100).ToString("0.0") + "% · 近50场 52.3% · 3.2KDA\n海斗分：60 · 人上人";
+                    string allyText = "胜率" + (ally[i] * 100).ToString("0.0") + "% · 近50场 52.3% · 3.2KDA\n海斗分：60 · 人上人";
                     BadgeItem item = new BadgeItem(0.155, 0.394 + i * 0.093, allyText, ally[i]);
                     item.LeftAlign = true;
                     item.TopAlign = true;

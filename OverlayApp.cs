@@ -355,7 +355,7 @@ namespace AramOverlay
                     double y = _config.AllyFirstY + i * _config.AllyPitchY;
                     ChampionStat stat = _data.Get(championId);
                     double? rate = stat == null ? (double?)null : stat.WinRate;
-                    string text = "总胜率" + _data.GetWinRateText(championId);
+                    string text = "胜率" + _data.GetWinRateText(championId);
                     if (member.Recent != null && member.Recent.Available)
                     {
                         text += " · 近" + member.Recent.Games.ToString() + "场 " +
