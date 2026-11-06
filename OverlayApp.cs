@@ -297,20 +297,18 @@ namespace AramOverlay
             {
                 int championId = session.BenchChampionIds[i];
                 double x = _config.BenchFirstX + i * _config.BenchPitchX;
+                double y = _config.BenchY;
                 ChampionStat stat = _data.Get(championId);
                 double? rate = stat == null ? (double?)null : stat.WinRate;
-                badges.Add(new BadgeItem(x, _config.BenchY, _data.GetWinRateText(championId), rate));
+                badges.Add(new BadgeItem(x, y, _data.GetWinRateText(championId), rate));
             }
 
             if (_config.ShowAllyRows)
             {
-                for (int i = 0; i < _config.AllyRows; i++)
+                int teamRows = Math.Min(_config.AllyRows, session.Team.Count);
+                for (int i = 0; i < teamRows; i++)
                 {
-                    int championId = 0;
-                    if (i < session.Team.Count)
-                    {
-                        championId = session.Team[i].ChampionId;
-                    }
+                    int championId = session.Team[i].ChampionId;
                     double y = _config.AllyFirstY + i * _config.AllyPitchY;
                     ChampionStat stat = championId > 0 ? _data.Get(championId) : null;
                     double? rate = stat == null ? (double?)null : stat.WinRate;

@@ -61,22 +61,22 @@ AramOverlayData\overlay.log
 ```json
 {
   "DataUrl": "https://raw.githubusercontent.com/Luckking77/aram-data/main/data/latest.json",
-  "BenchFirstX": 0.289,
-  "BenchPitchX": 0.0456,
-  "BenchY": 0.066,
-  "AllyX": 0.038,
-  "AllyFirstY": 0.173,
-  "AllyPitchY": 0.089,
+  "BenchFirstX": 0.292,
+  "BenchPitchX": 0.0315,
+  "BenchY": 0.065,
+  "AllyX": 0.036,
+  "AllyFirstY": 0.394,
+  "AllyPitchY": 0.093,
   "BadgeFontRatio": 0.0115,
   "ShowAllyRows": true,
   "HideWhenNotForeground": true
 }
 ```
 
-坐标都是相对客户端客户区的比例（0–1），与分辨率/DPI 无关。若位置有偏移，用托盘「预览 Overlay」对照调整：
+坐标都是相对客户端客户区的比例（0–1）。`BenchPitchX` 是相对宽度的席位间距；`BenchY`、`AllyFirstY`、`AllyPitchY` 是相对高度。若位置有偏移，用托盘「预览 Overlay」对照调整：
 
 - `BenchFirstX`：第一个席位中心 X；
-- `BenchPitchX`：席位间距 X；
+- `BenchPitchX`：席位间距（相对宽度）；
 - `BenchY`：席位胜率 Y；
 - `AllyX`：队友头像胜率 X；
 - `AllyFirstY` / `AllyPitchY`：队友第一行 Y / 行距。

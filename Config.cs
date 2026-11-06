@@ -34,14 +34,14 @@ namespace AramOverlay
             FallbackDataUrl = "https://cdn.jsdelivr.net/gh/Luckking77/aram-data@main/data/latest.json";
             RefreshMinutes = 60;
 
-            BenchFirstX = 0.289;
-            BenchPitchX = 0.0456;
-            BenchY = 0.066;
+            BenchFirstX = 0.292;
+            BenchPitchX = 0.0315;
+            BenchY = 0.065;
             BenchSlots = 10;
 
-            AllyX = 0.038;
-            AllyFirstY = 0.173;
-            AllyPitchY = 0.089;
+            AllyX = 0.036;
+            AllyFirstY = 0.394;
+            AllyPitchY = 0.093;
             AllyRows = 5;
 
             BadgeFontRatio = 0.0115;
