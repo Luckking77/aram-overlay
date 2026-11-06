@@ -16,6 +16,7 @@ render-test.png
 startup-error.txt
 
 # runtime files
+AramOverlayData/
 data/overlay.log
 data/test-result.txt
 data/captures/

@@ -42,10 +42,18 @@ Windows 选人页胜率 Overlay：把 101 国服「海克斯大乱斗」英雄�
 
 ## 配置
 
-首次运行会生成：
+首次运行会在 **exe 同目录**生成：
 
 ```text
-%APPDATA%\AramOverlay\config.json
+AramOverlayData\config.json
+AramOverlayData\captures\
+AramOverlayData\overlay.log
+```
+
+如果 exe 所在目录不可写（例如放在 Program Files），会自动回退到：
+
+```text
+%APPDATA%\AramOverlay\
 ```
 
 主要字段：

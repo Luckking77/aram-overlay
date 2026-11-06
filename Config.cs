@@ -56,19 +56,31 @@ namespace AramOverlay
             get
             {
                 string overrideDir = Environment.GetEnvironmentVariable("ARAM_OVERLAY_DATA_DIR");
-                string dir;
                 if (!string.IsNullOrEmpty(overrideDir))
                 {
-                    dir = overrideDir;
+                    Directory.CreateDirectory(overrideDir);
+                    return overrideDir;
                 }
-                else
+
+                // Prefer a folder next to the exe so logs/captures are easy to find.
+                string localDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AramOverlayData");
+                try
                 {
-                    dir = Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                        "AramOverlay");
+                    Directory.CreateDirectory(localDir);
+                    string probe = Path.Combine(localDir, ".write-test");
+                    File.WriteAllText(probe, "ok");
+                    File.Delete(probe);
+                    return localDir;
                 }
-                Directory.CreateDirectory(dir);
-                return dir;
+                catch
+                {
+                }
+
+                string roaming = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "AramOverlay");
+                Directory.CreateDirectory(roaming);
+                return roaming;
             }
         }
 

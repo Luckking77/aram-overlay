@@ -25,6 +25,7 @@ namespace AramOverlay
         private IntPtr _hotkeyHandle;
         private HwndSource _hotkeySource;
         private string _lastPhase;
+        private bool _capturedThisChampSelect;
 
         public OverlayApp()
             : this(false)
@@ -85,10 +86,11 @@ namespace AramOverlay
             {
                 return;
             }
-            Native.RegisterHotKey(_hotkeyHandle, 1, Native.MOD_CONTROL | Native.MOD_SHIFT, 0x78); // F9
-            Native.RegisterHotKey(_hotkeyHandle, 2, Native.MOD_CONTROL | Native.MOD_SHIFT, 0x79); // F10
-            Native.RegisterHotKey(_hotkeyHandle, 3, Native.MOD_CONTROL | Native.MOD_SHIFT, 0x7A); // F11
-            Native.RegisterHotKey(_hotkeyHandle, 4, Native.MOD_CONTROL | Native.MOD_SHIFT, 0x7B); // F12
+            bool h1 = Native.RegisterHotKey(_hotkeyHandle, 1, Native.MOD_CONTROL | Native.MOD_SHIFT, 0x78); // F9
+            bool h2 = Native.RegisterHotKey(_hotkeyHandle, 2, Native.MOD_CONTROL | Native.MOD_SHIFT, 0x79); // F10
+            bool h3 = Native.RegisterHotKey(_hotkeyHandle, 3, Native.MOD_CONTROL | Native.MOD_SHIFT, 0x7A); // F11
+            bool h4 = Native.RegisterHotKey(_hotkeyHandle, 4, Native.MOD_CONTROL | Native.MOD_SHIFT, 0x7B); // F12
+            Log("hotkeys F9=" + h1.ToString() + " F10=" + h2.ToString() + " F11=" + h3.ToString() + " F12=" + h4.ToString());
         }
 
         private void UnregisterHotkeys()
@@ -130,7 +132,7 @@ namespace AramOverlay
                 }
                 else if (id == 4)
                 {
-                    CaptureSnapshot();
+                    CaptureSnapshot("manual");
                     handled = true;
                 }
             }
@@ -152,6 +154,10 @@ namespace AramOverlay
             WinForms.ToolStripMenuItem refresh = new WinForms.ToolStripMenuItem("刷新数据");
             refresh.Click += delegate { RefreshDataAsync(); };
             menu.Items.Add(refresh);
+
+            WinForms.ToolStripMenuItem snapshot = new WinForms.ToolStripMenuItem("保存当前截图");
+            snapshot.Click += delegate { CaptureSnapshot("tray"); };
+            menu.Items.Add(snapshot);
 
             WinForms.ToolStripMenuItem reload = new WinForms.ToolStripMenuItem("重新加载配置");
             reload.Click += delegate { ReloadConfig(); };
@@ -246,6 +252,7 @@ namespace AramOverlay
                 _lastPhase = phase == null ? "" : phase;
                 if (phase == null || !string.Equals(phase, "ChampSelect", StringComparison.OrdinalIgnoreCase))
                 {
+                    _capturedThisChampSelect = false;
                     _overlay.HideOverlay();
                     return;
                 }
@@ -255,6 +262,12 @@ namespace AramOverlay
                 {
                     _overlay.HideOverlay();
                     return;
+                }
+
+                if (!_capturedThisChampSelect)
+                {
+                    _capturedThisChampSelect = true;
+                    CaptureSnapshot("auto");
                 }
 
                 List<BadgeItem> badges = BuildBadges(session);
@@ -330,27 +343,46 @@ namespace AramOverlay
             return badges;
         }
 
-        private void CaptureSnapshot()
+        private void CaptureSnapshot(string prefix)
         {
             try
             {
-                LeagueWindow window = LeagueWindowFinder.Find();
-                if (window == null || !window.IsValid)
-                {
-                    Log("snapshot: no league window");
-                    return;
-                }
                 _overlay.HideOverlay();
                 System.Threading.Thread.Sleep(150);
+
+                LeagueWindow window = LeagueWindowFinder.Find();
+                int left;
+                int top;
+                int width;
+                int height;
+                string kind;
+
+                if (window != null && window.IsValid)
+                {
+                    left = window.ClientRect.Left;
+                    top = window.ClientRect.Top;
+                    width = window.ClientRect.Right - window.ClientRect.Left;
+                    height = window.ClientRect.Bottom - window.ClientRect.Top;
+                    kind = "client";
+                }
+                else
+                {
+                    System.Drawing.Rectangle bounds = WinForms.Screen.PrimaryScreen.Bounds;
+                    left = bounds.Left;
+                    top = bounds.Top;
+                    width = bounds.Width;
+                    height = bounds.Height;
+                    kind = "screen";
+                    Log("snapshot: no league window, capturing full screen");
+                }
+
                 string dir = Path.Combine(AppConfig.ConfigDir, "captures");
                 Directory.CreateDirectory(dir);
-                string path = Path.Combine(dir, "client-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".png");
-                int width = window.ClientRect.Right - window.ClientRect.Left;
-                int height = window.ClientRect.Bottom - window.ClientRect.Top;
+                string path = Path.Combine(dir, prefix + "-" + kind + "-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".png");
                 using (System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(width, height))
                 using (System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(bitmap))
                 {
-                    graphics.CopyFromScreen(window.ClientRect.Left, window.ClientRect.Top, 0, 0, bitmap.Size);
+                    graphics.CopyFromScreen(left, top, 0, 0, bitmap.Size);
                     bitmap.Save(path, System.Drawing.Imaging.ImageFormat.Png);
                 }
                 Log("snapshot saved: " + path);
