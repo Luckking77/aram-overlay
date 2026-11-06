@@ -19,10 +19,13 @@ namespace AramOverlay
         public double WilsonLow { get; set; }
         public double Kda { get; set; }
         public double AvgDeaths { get; set; }
+        public int HaidouScore { get; set; }
+        public string HaidouRating { get; set; }
         public string SampleLabel { get; set; }
 
         public RecentMayhem()
         {
+            HaidouRating = "";
             SampleLabel = "";
         }
     }

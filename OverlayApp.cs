@@ -322,19 +322,18 @@ namespace AramOverlay
                     double y = _config.AllyFirstY + i * _config.AllyPitchY;
                     ChampionStat stat = _data.Get(championId);
                     double? rate = stat == null ? (double?)null : stat.WinRate;
-                    string text = _data.GetWinRateText(championId);
-                    if (member.Recent != null)
+                    string text = "总胜率" + _data.GetWinRateText(championId);
+                    if (member.Recent != null && member.Recent.Available)
                     {
-                        if (member.Recent.Available)
-                        {
-                            text += " · 近" + member.Recent.Games.ToString() + " " +
-                                (member.Recent.WinRate * 100.0).ToString("0.0") + "%" +
-                                " · " + member.Recent.Kda.ToString("0.0") + "KDA";
-                        }
-                        else
-                        {
-                            text += " · 近50 —";
-                        }
+                        text += " · 近" + member.Recent.Games.ToString() + "场 " +
+                            (member.Recent.WinRate * 100.0).ToString("0.0") + "%" +
+                            " · " + member.Recent.Kda.ToString("0.0") + "KDA" +
+                            " · 海斗分：" + member.Recent.HaidouScore.ToString() +
+                            " · " + member.Recent.HaidouRating;
+                    }
+                    else
+                    {
+                        text += " · 近50场 — · 海斗分：--";
                     }
                     badges.Add(new BadgeItem(_config.AllyX, y, text, rate));
                 }

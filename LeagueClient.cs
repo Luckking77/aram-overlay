@@ -514,6 +514,8 @@ namespace AramOverlay
             result.AvgDeaths = deaths / games;
             result.WilsonLow = WilsonLow(wins, games);
             result.SampleLabel = games < 10 ? "样本少" : (games < 30 ? "样本中" : "样本足");
+            result.HaidouScore = CalculateHaidouScore(result.WinRate, result.Kda, games);
+            result.HaidouRating = RateHaidou(result.HaidouScore);
             return result;
         }
 
@@ -617,6 +619,56 @@ namespace AramOverlay
             double centre = p + (z * z) / (2.0 * n);
             double margin = z * Math.Sqrt((p * (1.0 - p) + (z * z) / (4.0 * n)) / n);
             return Math.Max(0.0, (centre - margin) / denominator);
+        }
+
+        private static int CalculateHaidouScore(double winRate, double kda, int games)
+        {
+            // 自研 0-100 分：50 为基准，胜率权重最高，KDA 次之，样本不足扣分。
+            double score = 50.0;
+            score += (winRate - 0.50) * 200.0;
+            score += (kda - 2.50) * 7.0;
+            if (games < 50)
+            {
+                score -= (50 - games) * 0.4;
+            }
+            if (games < 10)
+            {
+                score = Math.Min(score, 55.0);
+            }
+            if (score < 0)
+            {
+                score = 0;
+            }
+            if (score > 100)
+            {
+                score = 100;
+            }
+            return (int)Math.Round(score);
+        }
+
+        private static string RateHaidou(int score)
+        {
+            if (score >= 85)
+            {
+                return "夯";
+            }
+            if (score >= 72)
+            {
+                return "强";
+            }
+            if (score >= 60)
+            {
+                return "稳";
+            }
+            if (score >= 48)
+            {
+                return "平";
+            }
+            if (score >= 35)
+            {
+                return "弱";
+            }
+            return "拉";
         }
 
         private async Task<string> GetSummonerNameAsync(long summonerId)
