@@ -136,6 +136,13 @@ namespace AramOverlay
         private int _port;
         private string _token;
         private readonly Dictionary<long, string> _summonerNames = new Dictionary<long, string>();
+        private readonly Dictionary<string, HistoryCacheEntry> _historyCache = new Dictionary<string, HistoryCacheEntry>();
+
+        private class HistoryCacheEntry
+        {
+            public RecentMayhem Value;
+            public DateTime At;
+        }
 
         public bool IsConnected
         {
@@ -355,6 +362,263 @@ namespace AramOverlay
             }
         }
 
+        public async Task ResolveTeamStatsAsync(ChampSelectState state)
+        {
+            if (state == null || state.Team == null)
+            {
+                return;
+            }
+            for (int i = 0; i < state.Team.Count; i++)
+            {
+                TeamMember member = state.Team[i];
+                if (string.IsNullOrEmpty(member.Puuid))
+                {
+                    continue;
+                }
+                HistoryCacheEntry cached;
+                if (_historyCache.TryGetValue(member.Puuid, out cached) && (DateTime.UtcNow - cached.At).TotalMinutes < 10)
+                {
+                    member.Recent = cached.Value;
+                    continue;
+                }
+                RecentMayhem recent = await GetRecentMayhemAsync(member.Puuid, 50).ConfigureAwait(false);
+                _historyCache[member.Puuid] = new HistoryCacheEntry { Value = recent, At = DateTime.UtcNow };
+                member.Recent = recent;
+            }
+        }
+
+        private async Task<RecentMayhem> GetRecentMayhemAsync(string puuid, int wanted)
+        {
+            RecentMayhem result = new RecentMayhem();
+            if (_http == null || string.IsNullOrEmpty(puuid))
+            {
+                return result;
+            }
+
+            int games = 0;
+            int wins = 0;
+            double kills = 0;
+            double deaths = 0;
+            double assists = 0;
+            int fetched = 0;
+
+            try
+            {
+                for (int start = 0; start < 100 && games < wanted; start += 20)
+                {
+                    int end = start + 19;
+                    string url = "lol-match-history/v1/products/lol/" + Uri.EscapeDataString(puuid) +
+                        "/matches?begIndex=" + start.ToString() + "&endIndex=" + end.ToString();
+                    string json = await _http.GetStringAsync(url).ConfigureAwait(false);
+                    JavaScriptSerializer serializer = new JavaScriptSerializer();
+                    Dictionary<string, object> root = serializer.DeserializeObject(json) as Dictionary<string, object>;
+                    if (root == null)
+                    {
+                        break;
+                    }
+
+                    object gamesRoot;
+                    if (!root.TryGetValue("games", out gamesRoot) || gamesRoot == null)
+                    {
+                        break;
+                    }
+                    Dictionary<string, object> gamesObject = gamesRoot as Dictionary<string, object>;
+                    if (gamesObject == null)
+                    {
+                        break;
+                    }
+                    object listValue;
+                    if (!gamesObject.TryGetValue("games", out listValue) || listValue == null)
+                    {
+                        break;
+                    }
+                    object[] list = listValue as object[];
+                    if (list == null || list.Length == 0)
+                    {
+                        break;
+                    }
+
+                    fetched += list.Length;
+                    for (int i = 0; i < list.Length && games < wanted; i++)
+                    {
+                        Dictionary<string, object> game = list[i] as Dictionary<string, object>;
+                        if (game == null)
+                        {
+                            continue;
+                        }
+                        int queueId;
+                        if (!TryGetInt(game, "queueId", out queueId) || queueId != 2400)
+                        {
+                            continue;
+                        }
+                        Dictionary<string, object> participant = FindParticipant(game, puuid);
+                        if (participant == null)
+                        {
+                            continue;
+                        }
+                        Dictionary<string, object> stats = null;
+                        object statsValue;
+                        if (participant.TryGetValue("stats", out statsValue))
+                        {
+                            stats = statsValue as Dictionary<string, object>;
+                        }
+                        if (stats == null)
+                        {
+                            continue;
+                        }
+
+                        bool won = false;
+                        object winValue;
+                        if (stats.TryGetValue("win", out winValue) && winValue is bool)
+                        {
+                            won = (bool)winValue;
+                        }
+                        int k;
+                        int d;
+                        int a;
+                        TryGetInt(stats, "kills", out k);
+                        TryGetInt(stats, "deaths", out d);
+                        TryGetInt(stats, "assists", out a);
+                        games++;
+                        if (won)
+                        {
+                            wins++;
+                        }
+                        kills += k;
+                        deaths += d;
+                        assists += a;
+                    }
+
+                    if (list.Length < 20)
+                    {
+                        break;
+                    }
+                }
+            }
+            catch
+            {
+                return result;
+            }
+
+            if (games == 0)
+            {
+                result.SampleLabel = "无数据";
+                return result;
+            }
+
+            result.Available = true;
+            result.Games = games;
+            result.Wins = wins;
+            result.WinRate = (double)wins / games;
+            result.Kda = (kills + assists) / Math.Max(1.0, deaths);
+            result.AvgDeaths = deaths / games;
+            result.WilsonLow = WilsonLow(wins, games);
+            result.SampleLabel = games < 10 ? "样本少" : (games < 30 ? "样本中" : "样本足");
+            return result;
+        }
+
+        private static Dictionary<string, object> FindParticipant(Dictionary<string, object> game, string puuid)
+        {
+            object listValue;
+            if (!game.TryGetValue("participants", out listValue) || listValue == null)
+            {
+                return null;
+            }
+            object[] participants = listValue as object[];
+            if (participants == null)
+            {
+                return null;
+            }
+            for (int i = 0; i < participants.Length; i++)
+            {
+                Dictionary<string, object> participant = participants[i] as Dictionary<string, object>;
+                if (participant == null)
+                {
+                    continue;
+                }
+                object p;
+                if (participant.TryGetValue("puuid", out p) && p != null &&
+                    string.Equals(Convert.ToString(p), puuid, StringComparison.OrdinalIgnoreCase))
+                {
+                    return participant;
+                }
+            }
+
+            object identitiesValue;
+            if (game.TryGetValue("participantIdentities", out identitiesValue) && identitiesValue != null)
+            {
+                object[] identities = identitiesValue as object[];
+                if (identities != null)
+                {
+                    int targetId = -1;
+                    for (int i = 0; i < identities.Length; i++)
+                    {
+                        Dictionary<string, object> identity = identities[i] as Dictionary<string, object>;
+                        if (identity == null)
+                        {
+                            continue;
+                        }
+                        Dictionary<string, object> player = null;
+                        object playerValue;
+                        if (identity.TryGetValue("player", out playerValue))
+                        {
+                            player = playerValue as Dictionary<string, object>;
+                        }
+                        if (player == null)
+                        {
+                            continue;
+                        }
+                        object p;
+                        if (player.TryGetValue("puuid", out p) && p != null &&
+                            string.Equals(Convert.ToString(p), puuid, StringComparison.OrdinalIgnoreCase))
+                        {
+                            TryGetInt(identity, "participantId", out targetId);
+                            break;
+                        }
+                    }
+                    if (targetId > 0)
+                    {
+                        for (int i = 0; i < participants.Length; i++)
+                        {
+                            Dictionary<string, object> participant = participants[i] as Dictionary<string, object>;
+                            int id;
+                            if (participant != null && TryGetInt(participant, "participantId", out id) && id == targetId)
+                            {
+                                return participant;
+                            }
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        private static bool TryGetInt(Dictionary<string, object> dict, string key, out int value)
+        {
+            value = 0;
+            object raw;
+            if (dict == null || !dict.TryGetValue(key, out raw) || raw == null)
+            {
+                return false;
+            }
+            return int.TryParse(Convert.ToString(raw), out value);
+        }
+
+        private static double WilsonLow(int wins, int games)
+        {
+            if (games <= 0)
+            {
+                return 0;
+            }
+            const double z = 1.959963984540054;
+            double n = games;
+            double p = (double)wins / n;
+            double denominator = 1.0 + (z * z) / n;
+            double centre = p + (z * z) / (2.0 * n);
+            double margin = z * Math.Sqrt((p * (1.0 - p) + (z * z) / (4.0 * n)) / n);
+            return Math.Max(0.0, (centre - margin) / denominator);
+        }
+
         private async Task<string> GetSummonerNameAsync(long summonerId)
         {
             if (_http == null || summonerId <= 0)
@@ -481,6 +745,11 @@ namespace AramOverlay
                             {
                                 member.SummonerId = summonerId;
                             }
+                        }
+                        object puuidValue;
+                        if (item.TryGetValue("puuid", out puuidValue) && puuidValue != null)
+                        {
+                            member.Puuid = Convert.ToString(puuidValue);
                         }
                         state.Team.Add(member);
                     }
