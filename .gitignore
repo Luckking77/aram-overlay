@@ -1,0 +1,25 @@
+# build output
+bin/
+obj/
+dist/
+*.exe
+*.pdb
+*.user
+*.suo
+
+# local debug artifacts
+AramOverlayConsole.exe
+hello.cs
+hello.exe
+demo*.png
+render-test.png
+startup-error.txt
+
+# runtime files
+data/overlay.log
+data/test-result.txt
+data/captures/
+data/config.json
+
+# keep the seed data
+!data/latest.json

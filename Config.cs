@@ -1,0 +1,169 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Web.Script.Serialization;
+
+namespace AramOverlay
+{
+    public class AppConfig
+    {
+        public string DataUrl { get; set; }
+        public string FallbackDataUrl { get; set; }
+        public int RefreshMinutes { get; set; }
+
+        // Ratios relative to the League client area.
+        public double BenchFirstX { get; set; }
+        public double BenchPitchX { get; set; }
+        public double BenchY { get; set; }
+        public int BenchSlots { get; set; }
+
+        public double AllyX { get; set; }
+        public double AllyFirstY { get; set; }
+        public double AllyPitchY { get; set; }
+        public int AllyRows { get; set; }
+
+        public double BadgeFontRatio { get; set; }
+        public bool Colorize { get; set; }
+        public bool ShowAllyRows { get; set; }
+        public bool HideWhenNotForeground { get; set; }
+        public bool PreviewOnStart { get; set; }
+
+        public AppConfig()
+        {
+            DataUrl = "https://raw.githubusercontent.com/Luckking77/aram-data/main/data/latest.json";
+            FallbackDataUrl = "https://cdn.jsdelivr.net/gh/Luckking77/aram-data@main/data/latest.json";
+            RefreshMinutes = 60;
+
+            BenchFirstX = 0.289;
+            BenchPitchX = 0.0456;
+            BenchY = 0.066;
+            BenchSlots = 10;
+
+            AllyX = 0.038;
+            AllyFirstY = 0.173;
+            AllyPitchY = 0.089;
+            AllyRows = 5;
+
+            BadgeFontRatio = 0.0115;
+            Colorize = true;
+            ShowAllyRows = true;
+            HideWhenNotForeground = true;
+            PreviewOnStart = false;
+        }
+
+        public static string ConfigDir
+        {
+            get
+            {
+                string overrideDir = Environment.GetEnvironmentVariable("ARAM_OVERLAY_DATA_DIR");
+                string dir;
+                if (!string.IsNullOrEmpty(overrideDir))
+                {
+                    dir = overrideDir;
+                }
+                else
+                {
+                    dir = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                        "AramOverlay");
+                }
+                Directory.CreateDirectory(dir);
+                return dir;
+            }
+        }
+
+        public static string ConfigPath
+        {
+            get { return Path.Combine(ConfigDir, "config.json"); }
+        }
+
+        public static AppConfig Load()
+        {
+            try
+            {
+                if (File.Exists(ConfigPath))
+                {
+                    string json = File.ReadAllText(ConfigPath);
+                    JavaScriptSerializer serializer = new JavaScriptSerializer();
+                    AppConfig config = serializer.Deserialize<AppConfig>(json);
+                    if (config != null)
+                    {
+                        config.Normalize();
+                        return config;
+                    }
+                }
+            }
+            catch
+            {
+                // Keep defaults; the app should still start.
+            }
+
+            AppConfig defaults = new AppConfig();
+            try
+            {
+                defaults.Save();
+            }
+            catch
+            {
+            }
+            return defaults;
+        }
+
+        public void Save()
+        {
+            try
+            {
+                JavaScriptSerializer serializer = new JavaScriptSerializer();
+                string json = serializer.Serialize(this);
+                File.WriteAllText(ConfigPath, json);
+            }
+            catch
+            {
+            }
+        }
+
+        public void Normalize()
+        {
+            if (string.IsNullOrEmpty(DataUrl))
+            {
+                DataUrl = "https://raw.githubusercontent.com/Luckking77/aram-data/main/data/latest.json";
+            }
+            if (string.IsNullOrEmpty(FallbackDataUrl))
+            {
+                FallbackDataUrl = "https://cdn.jsdelivr.net/gh/Luckking77/aram-data@main/data/latest.json";
+            }
+            if (RefreshMinutes < 5)
+            {
+                RefreshMinutes = 5;
+            }
+            if (RefreshMinutes > 1440)
+            {
+                RefreshMinutes = 1440;
+            }
+            if (BenchSlots < 1)
+            {
+                BenchSlots = 10;
+            }
+            if (BenchSlots > 10)
+            {
+                BenchSlots = 10;
+            }
+            if (AllyRows < 1)
+            {
+                AllyRows = 5;
+            }
+            if (AllyRows > 5)
+            {
+                AllyRows = 5;
+            }
+            if (BadgeFontRatio < 0.005)
+            {
+                BadgeFontRatio = 0.005;
+            }
+            if (BadgeFontRatio > 0.05)
+            {
+                BadgeFontRatio = 0.05;
+            }
+        }
+    }
+}
