@@ -10,6 +10,7 @@ namespace AramOverlay
         public string DataUrl { get; set; }
         public string FallbackDataUrl { get; set; }
         public int RefreshMinutes { get; set; }
+        public int LayoutVersion { get; set; }
 
         // Ratios relative to the League client area.
         public double BenchFirstX { get; set; }
@@ -33,13 +34,14 @@ namespace AramOverlay
             DataUrl = "https://raw.githubusercontent.com/Luckking77/aram-data/main/data/latest.json";
             FallbackDataUrl = "https://cdn.jsdelivr.net/gh/Luckking77/aram-data@main/data/latest.json";
             RefreshMinutes = 60;
+            LayoutVersion = 3;
 
             BenchFirstX = 0.292;
             BenchPitchX = 0.0315;
-            BenchY = 0.065;
+            BenchY = 0.090;
             BenchSlots = 10;
 
-            AllyX = 0.036;
+            AllyX = 0.155;
             AllyFirstY = 0.394;
             AllyPitchY = 0.093;
             AllyRows = 5;
@@ -101,6 +103,7 @@ namespace AramOverlay
                     if (config != null)
                     {
                         config.Normalize();
+                        config.Save();
                         return config;
                     }
                 }
@@ -136,6 +139,20 @@ namespace AramOverlay
 
         public void Normalize()
         {
+            if (LayoutVersion < 3)
+            {
+                // 1920x1080 -> 1600x900 / 1280x720 / 1024x576 baseline.
+                BenchFirstX = 0.292;
+                BenchPitchX = 0.0315;
+                BenchY = 0.090;
+                BenchSlots = 10;
+                AllyX = 0.155;
+                AllyFirstY = 0.394;
+                AllyPitchY = 0.093;
+                AllyRows = 5;
+                LayoutVersion = 3;
+            }
+
             if (string.IsNullOrEmpty(DataUrl))
             {
                 DataUrl = "https://raw.githubusercontent.com/Luckking77/aram-data/main/data/latest.json";

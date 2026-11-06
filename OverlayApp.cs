@@ -20,6 +20,7 @@ namespace AramOverlay
         private DispatcherTimer _dataTimer;
         private bool _polling;
         private bool _preview;
+        private DateTime _previewUntil;
         private bool _enabled;
         private bool _demo;
         private IntPtr _hotkeyHandle;
@@ -76,7 +77,7 @@ namespace AramOverlay
 
             if (_config.PreviewOnStart)
             {
-                _preview = true;
+                SetPreview(true);
             }
         }
 
@@ -148,7 +149,7 @@ namespace AramOverlay
 
             WinForms.ContextMenuStrip menu = new WinForms.ContextMenuStrip();
             WinForms.ToolStripMenuItem preview = new WinForms.ToolStripMenuItem("预览 Overlay");
-            preview.Click += delegate { _preview = !_preview; Log("preview=" + _preview.ToString()); };
+            preview.Click += delegate { SetPreview(!_preview); Log("preview=" + _preview.ToString()); };
             menu.Items.Add(preview);
 
             WinForms.ToolStripMenuItem refresh = new WinForms.ToolStripMenuItem("刷新数据");
@@ -174,7 +175,7 @@ namespace AramOverlay
             menu.Items.Add(exit);
 
             _tray.ContextMenuStrip = menu;
-            _tray.DoubleClick += delegate { _preview = !_preview; };
+            _tray.DoubleClick += delegate { SetPreview(!_preview); };
         }
 
         private async void RefreshDataAsync()
@@ -240,11 +241,9 @@ namespace AramOverlay
                     return;
                 }
 
-                if (_preview)
+                if (_preview && DateTime.Now > _previewUntil)
                 {
-                    _overlay.SetBadges(BuildPreviewBadges());
-                    _overlay.ShowOverlay(window);
-                    return;
+                    SetPreview(false);
                 }
 
                 _league.EnsureConnected();
@@ -253,6 +252,10 @@ namespace AramOverlay
                 if (phase == null || !string.Equals(phase, "ChampSelect", StringComparison.OrdinalIgnoreCase))
                 {
                     _capturedThisChampSelect = false;
+                    if (_preview)
+                    {
+                        SetPreview(false);
+                    }
                     _overlay.HideOverlay();
                     return;
                 }
@@ -270,6 +273,7 @@ namespace AramOverlay
                     CaptureSnapshot("auto", true);
                 }
 
+                await _league.ResolveTeamNamesAsync(session);
                 List<BadgeItem> badges = BuildBadges(session);
                 _overlay.SetBadges(badges);
                 _overlay.ShowOverlay(window);
@@ -309,11 +313,14 @@ namespace AramOverlay
                 for (int i = 0; i < teamRows; i++)
                 {
                     int championId = session.Team[i].ChampionId;
+                    if (championId <= 0)
+                    {
+                        continue;
+                    }
                     double y = _config.AllyFirstY + i * _config.AllyPitchY;
-                    ChampionStat stat = championId > 0 ? _data.Get(championId) : null;
+                    ChampionStat stat = _data.Get(championId);
                     double? rate = stat == null ? (double?)null : stat.WinRate;
-                    string text = championId > 0 ? _data.GetWinRateText(championId) : "—";
-                    badges.Add(new BadgeItem(_config.AllyX, y, text, rate));
+                    badges.Add(new BadgeItem(_config.AllyX, y, _data.GetWinRateText(championId), rate));
                 }
             }
 
@@ -414,6 +421,17 @@ namespace AramOverlay
             }
         }
 
+        private void SetPreview(bool enabled)
+        {
+            _preview = enabled;
+            _previewUntil = enabled ? DateTime.Now.AddSeconds(30) : DateTime.MinValue;
+            UpdateTrayText();
+            if (!enabled)
+            {
+                _overlay.HideOverlay();
+            }
+        }
+
         private void UpdateTrayText()
         {
             if (_tray == null)
@@ -421,6 +439,10 @@ namespace AramOverlay
                 return;
             }
             string text = "ARAM Overlay";
+            if (_preview)
+            {
+                text += " · PREVIEW";
+            }
             if (_data != null && _data.Count > 0)
             {
                 text = "ARAM Overlay · " + _data.DataDate + " · " + _data.Count.ToString() + " heroes";

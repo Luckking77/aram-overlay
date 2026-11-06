@@ -14,6 +14,13 @@ namespace AramOverlay
     {
         public int CellId { get; set; }
         public int ChampionId { get; set; }
+        public long SummonerId { get; set; }
+        public string DisplayName { get; set; }
+
+        public TeamMember()
+        {
+            DisplayName = "";
+        }
     }
 
     public class ChampSelectState

@@ -34,7 +34,7 @@ Windows 选人页胜率 Overlay：把 101 国服「海克斯大乱斗」英雄�
 
 托盘菜单：
 
-- 预览 Overlay（用于校准位置，不需要 LCU）；
+- 预览 Overlay（30 秒，选人阶段显示真实 badge，用于校准）；
 - 刷新数据；
 - 重新加载配置；
 - 打开配置目录；
@@ -65,8 +65,8 @@ AramOverlayData\overlay.log
   "DataUrl": "https://raw.githubusercontent.com/Luckking77/aram-data/main/data/latest.json",
   "BenchFirstX": 0.292,
   "BenchPitchX": 0.0315,
-  "BenchY": 0.065,
-  "AllyX": 0.036,
+  "BenchY": 0.090,
+  "AllyX": 0.155,
   "AllyFirstY": 0.394,
   "AllyPitchY": 0.093,
   "BadgeFontRatio": 0.0115,
@@ -79,8 +79,8 @@ AramOverlayData\overlay.log
 
 - `BenchFirstX`：第一个席位中心 X；
 - `BenchPitchX`：席位间距（相对宽度）；
-- `BenchY`：席位胜率 Y；
-- `AllyX`：队友头像胜率 X；
+- `BenchY`：席位胜率 Y（头像下方）；
+- `AllyX`：队友名字后的胜率 X；
 - `AllyFirstY` / `AllyPitchY`：队友第一行 Y / 行距。
 
 改完保存，托盘「重新加载配置」或 `Ctrl+Shift+F11`。

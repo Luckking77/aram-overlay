@@ -135,6 +135,7 @@ namespace AramOverlay
         private DateTime _lastConnectAttempt;
         private int _port;
         private string _token;
+        private readonly Dictionary<long, string> _summonerNames = new Dictionary<long, string>();
 
         public bool IsConnected
         {
@@ -322,6 +323,87 @@ namespace AramOverlay
             }
         }
 
+        public async Task ResolveTeamNamesAsync(ChampSelectState state)
+        {
+            if (state == null || state.Team == null)
+            {
+                return;
+            }
+            for (int i = 0; i < state.Team.Count; i++)
+            {
+                TeamMember member = state.Team[i];
+                if (member.SummonerId <= 0)
+                {
+                    continue;
+                }
+                if (!string.IsNullOrEmpty(member.DisplayName))
+                {
+                    continue;
+                }
+                string cached;
+                if (_summonerNames.TryGetValue(member.SummonerId, out cached))
+                {
+                    member.DisplayName = cached;
+                    continue;
+                }
+                string name = await GetSummonerNameAsync(member.SummonerId);
+                if (!string.IsNullOrEmpty(name))
+                {
+                    _summonerNames[member.SummonerId] = name;
+                    member.DisplayName = name;
+                }
+            }
+        }
+
+        private async Task<string> GetSummonerNameAsync(long summonerId)
+        {
+            if (_http == null || summonerId <= 0)
+            {
+                return null;
+            }
+            try
+            {
+                string json = await _http.GetStringAsync("lol-summoner/v1/summoners/" + summonerId.ToString()).ConfigureAwait(false);
+                JavaScriptSerializer serializer = new JavaScriptSerializer();
+                Dictionary<string, object> root = serializer.DeserializeObject(json) as Dictionary<string, object>;
+                if (root == null)
+                {
+                    return null;
+                }
+
+                string displayName = null;
+                object displayValue;
+                if (root.TryGetValue("displayName", out displayValue) && displayValue != null)
+                {
+                    displayName = Convert.ToString(displayValue);
+                }
+                if (string.IsNullOrEmpty(displayName))
+                {
+                    string gameName = null;
+                    string tagLine = null;
+                    object gameValue;
+                    object tagValue;
+                    if (root.TryGetValue("gameName", out gameValue) && gameValue != null)
+                    {
+                        gameName = Convert.ToString(gameValue);
+                    }
+                    if (root.TryGetValue("tagLine", out tagValue) && tagValue != null)
+                    {
+                        tagLine = Convert.ToString(tagValue);
+                    }
+                    if (!string.IsNullOrEmpty(gameName))
+                    {
+                        displayName = string.IsNullOrEmpty(tagLine) ? gameName : gameName + "#" + tagLine;
+                    }
+                }
+                return displayName;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         private static ChampSelectState ParseChampSelect(string json)
         {
             JavaScriptSerializer serializer = new JavaScriptSerializer();
@@ -350,7 +432,7 @@ namespace AramOverlay
                         if (item.TryGetValue("championId", out idValue) && idValue != null)
                         {
                             int id;
-                            if (int.TryParse(Convert.ToString(idValue), out id))
+                            if (int.TryParse(Convert.ToString(idValue), out id) && id > 0)
                             {
                                 state.BenchChampionIds.Add(id);
                             }
@@ -389,6 +471,15 @@ namespace AramOverlay
                             if (int.TryParse(Convert.ToString(champValue), out champId))
                             {
                                 member.ChampionId = champId;
+                            }
+                        }
+                        object summonerValue;
+                        if (item.TryGetValue("summonerId", out summonerValue) && summonerValue != null)
+                        {
+                            long summonerId;
+                            if (long.TryParse(Convert.ToString(summonerValue), out summonerId))
+                            {
+                                member.SummonerId = summonerId;
                             }
                         }
                         state.Team.Add(member);
