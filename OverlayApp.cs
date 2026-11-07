@@ -21,6 +21,7 @@ namespace AramOverlay
         private string _augmentOcrCommand;
         private int _lastChampionId;
         private bool _augmentScanning;
+        private bool _augmentCaptured;
         private WinForms.NotifyIcon _tray;
         private DispatcherTimer _pollTimer;
         private DispatcherTimer _dataTimer;
@@ -388,10 +389,12 @@ namespace AramOverlay
                 {
                     return AugmentOcr.Scan(screen, game.ClientRect, _augmentOcrCommand);
                 });
-                screen.Dispose();
 
                 List<BadgeItem> badges = new List<BadgeItem>();
-                double[] centers = new double[] { 0.226, 0.445, 0.668 };
+                bool is1440p = width >= 2400;
+                double[] centers = is1440p
+                    ? new double[] { 0.308, 0.500, 0.692 }
+                    : new double[] { 0.226, 0.445, 0.668 };
                 int matched = 0;
                 for (int i = 0; i < lines.Count && i < centers.Length; i++)
                 {
@@ -413,11 +416,22 @@ namespace AramOverlay
                 {
                     _augmentOverlay.SetBadges(badges);
                     _augmentOverlay.ShowOverlay(game);
+                    if (!_augmentCaptured)
+                    {
+                        _augmentCaptured = true;
+                        string dir = Path.Combine(AppConfig.ConfigDir, "captures");
+                        Directory.CreateDirectory(dir);
+                        string capture = Path.Combine(dir, "augment-raw-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".png");
+                        screen.Save(capture, System.Drawing.Imaging.ImageFormat.Png);
+                        Log("augment raw saved: " + capture);
+                    }
                 }
                 else
                 {
+                    _augmentCaptured = false;
                     _augmentOverlay.HideOverlay();
                 }
+                screen.Dispose();
             }
             catch
             {

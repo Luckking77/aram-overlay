@@ -22,12 +22,20 @@ namespace AramOverlay
 
     public static class AugmentOcr
     {
-        // 1920x1080 card title regions, calibrated against a real CN augment screen.
-        private static readonly int[,] CardRects = new int[,]
+        // Card title regions, calibrated against real CN augment screens.
+        private static readonly int[,] CardRects1920 = new int[,]
         {
             { 300, 390, 310, 70 },
             { 700, 390, 360, 70 },
             { 1180, 390, 300, 70 }
+        };
+
+        // HexBox preset for 2560x1440; used when the game is 1440p.
+        private static readonly int[,] CardRects2560 = new int[,]
+        {
+            { 615, 577, 347, 63 },
+            { 1107, 577, 347, 63 },
+            { 1598, 577, 347, 63 }
         };
 
         public static string FindCommand()
@@ -71,15 +79,19 @@ namespace AramOverlay
 
             string tempDir = Path.Combine(AppConfig.ConfigDir, "ocr-tmp");
             Directory.CreateDirectory(tempDir);
-            double sx = gameWidth / 1920.0;
-            double sy = gameHeight / 1080.0;
+            bool is1440p = gameWidth >= 2400;
+            int[,] cardRects = is1440p ? CardRects2560 : CardRects1920;
+            int baseWidth = is1440p ? 2560 : 1920;
+            int baseHeight = is1440p ? 1440 : 1080;
+            double sx = gameWidth / (double)baseWidth;
+            double sy = gameHeight / (double)baseHeight;
 
             for (int i = 0; i < 3; i++)
             {
-                int x = (int)Math.Round(CardRects[i, 0] * sx);
-                int y = (int)Math.Round(CardRects[i, 1] * sy);
-                int w = (int)Math.Round(CardRects[i, 2] * sx);
-                int h = (int)Math.Round(CardRects[i, 3] * sy);
+                int x = (int)Math.Round(cardRects[i, 0] * sx);
+                int y = (int)Math.Round(cardRects[i, 1] * sy);
+                int w = (int)Math.Round(cardRects[i, 2] * sx);
+                int h = (int)Math.Round(cardRects[i, 3] * sy);
                 x = Math.Max(0, Math.Min(screen.Width - 2, x));
                 y = Math.Max(0, Math.Min(screen.Height - 2, y));
                 w = Math.Max(2, Math.Min(screen.Width - x, w));
