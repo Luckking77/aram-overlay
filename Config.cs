@@ -36,7 +36,7 @@ namespace AramOverlay
             FallbackDataUrl = "https://cdn.jsdelivr.net/gh/Luckking77/aram-data@main/data/latest.json";
             OcrCommand = "";
             RefreshMinutes = 60;
-            LayoutVersion = 5;
+            LayoutVersion = 6;
 
             BenchFirstX = 0.292;
             BenchPitchX = 0.0315;
@@ -44,7 +44,7 @@ namespace AramOverlay
             BenchSlots = 10;
 
             AllyX = 0.180;
-            AllyFirstY = 0.394;
+            AllyFirstY = 0.386;
             AllyPitchY = 0.093;
             AllyRows = 5;
 
@@ -166,6 +166,12 @@ namespace AramOverlay
                 AllyX = 0.180;
                 BadgeFontRatio = 0.0165;
                 LayoutVersion = 5;
+            }
+
+            if (LayoutVersion < 6)
+            {
+                AllyFirstY = 0.386;
+                LayoutVersion = 6;
             }
 
             if (string.IsNullOrEmpty(DataUrl))

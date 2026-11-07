@@ -28,6 +28,8 @@ namespace AramOverlay
         private static StreamWriter _workerInput;
         private static readonly ConcurrentQueue<string> WorkerLines = new ConcurrentQueue<string>();
         private static readonly object WorkerLock = new object();
+        private static int _workerFailures;
+        private static bool _workerDisabled;
 
         // Card title regions, calibrated against real CN augment screens.
         private static readonly int[,] CardRects1920 = new int[,]
@@ -102,6 +104,10 @@ namespace AramOverlay
         {
             lock (WorkerLock)
             {
+                if (_workerDisabled)
+                {
+                    return false;
+                }
                 if (_worker != null && !_worker.HasExited)
                 {
                     return true;
@@ -167,18 +173,25 @@ namespace AramOverlay
             }
 
             Stopwatch stopwatch = Stopwatch.StartNew();
-            while (stopwatch.ElapsedMilliseconds < 1600)
+            while (stopwatch.ElapsedMilliseconds < 700)
             {
                 string line;
                 if (WorkerLines.TryDequeue(out line))
                 {
                     result = ParseWorkerLine(line);
-                    if (result.Count == 3)
+                    if (result.Count == 3 && !string.IsNullOrEmpty(result[0].Text))
                     {
+                        _workerFailures = 0;
                         return result;
                     }
                 }
                 Thread.Sleep(25);
+            }
+            _workerFailures++;
+            if (_workerFailures >= 3)
+            {
+                _workerDisabled = true;
+                Shutdown();
             }
             return result;
         }
