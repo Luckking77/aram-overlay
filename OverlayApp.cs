@@ -179,7 +179,7 @@ namespace AramOverlay
         private void CreateTray()
         {
             _tray = new WinForms.NotifyIcon();
-            _tray.Icon = System.Drawing.SystemIcons.Application;
+            _tray.Icon = LoadAppIcon();
             _tray.Text = "ARAM Overlay";
             _tray.Visible = true;
 
@@ -212,7 +212,24 @@ namespace AramOverlay
 
             _tray.ContextMenuStrip = menu;
             _tray.DoubleClick += delegate { SetPreview(!_preview); };
+            UiTheme.ApplyMenu(menu);
             Log("tray icon initialized");
+        }
+
+        private static System.Drawing.Icon LoadAppIcon()
+        {
+            try
+            {
+                string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "aram.ico");
+                if (File.Exists(path))
+                {
+                    return new System.Drawing.Icon(path);
+                }
+            }
+            catch
+            {
+            }
+            return System.Drawing.SystemIcons.Application;
         }
 
         private async void RefreshDataAsync()

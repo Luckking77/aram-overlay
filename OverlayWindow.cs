@@ -135,7 +135,7 @@ namespace AramOverlay
             _canvas.Width = width;
             _canvas.Height = height;
             double fontSize = Math.Max(14.0, height * GetFontRatio());
-            FontFamily font = new FontFamily("Segoe UI");
+            FontFamily font = new FontFamily("Microsoft YaHei UI");
 
             for (int i = 0; i < _badges.Count; i++)
             {
@@ -192,13 +192,18 @@ namespace AramOverlay
             }
             if (winRate.Value >= 0.52)
             {
-                return new SolidColorBrush(Color.FromRgb(140, 255, 184));
+                return FromDrawing(UiTheme.High);
             }
             if (winRate.Value <= 0.48)
             {
-                return new SolidColorBrush(Color.FromRgb(255, 155, 155));
+                return FromDrawing(UiTheme.Low);
             }
-            return Brushes.White;
+            return FromDrawing(UiTheme.Text);
+        }
+
+        private static Brush FromDrawing(System.Drawing.Color color)
+        {
+            return new SolidColorBrush(Color.FromArgb(color.A, color.R, color.G, color.B));
         }
     }
 }
