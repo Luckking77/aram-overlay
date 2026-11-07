@@ -46,7 +46,7 @@ Windows 选人页胜率 Overlay：把 101 国服「海克斯大乱斗」英雄�
 | `Ctrl+Shift+F9` | 显示/隐藏 Overlay |
 | `Ctrl+Shift+F10` | 立即刷新数据 |
 | `Ctrl+Shift+F11` | 重新加载配置 |
-| `Ctrl+Shift+F12` | 保存当前客户端截图（含 Overlay，用于校准/排障） |
+| `Ctrl+Shift+F12` | 保存当前游戏/客户端截图（含 Overlay，用于校准/排障） |
 
 托盘菜单：
 

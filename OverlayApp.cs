@@ -546,12 +546,17 @@ namespace AramOverlay
                     System.Threading.Thread.Sleep(150);
                 }
 
-                LeagueWindow window = LeagueWindowFinder.Find();
+                LeagueWindow window = GameWindowFinder.Find();
+                string kind = "game";
+                if (window == null || !window.IsValid)
+                {
+                    window = LeagueWindowFinder.Find();
+                    kind = "client";
+                }
                 int left;
                 int top;
                 int width;
                 int height;
-                string kind;
 
                 if (window != null && window.IsValid)
                 {
@@ -559,7 +564,6 @@ namespace AramOverlay
                     top = window.ClientRect.Top;
                     width = window.ClientRect.Right - window.ClientRect.Left;
                     height = window.ClientRect.Bottom - window.ClientRect.Top;
-                    kind = "client";
                 }
                 else
                 {
@@ -569,7 +573,7 @@ namespace AramOverlay
                     width = bounds.Width;
                     height = bounds.Height;
                     kind = "screen";
-                    Log("snapshot: no league window, capturing full screen");
+                    Log("snapshot: no league/game window, capturing full screen");
                 }
 
                 string dir = Path.Combine(AppConfig.ConfigDir, "captures");
