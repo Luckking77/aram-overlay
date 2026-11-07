@@ -126,15 +126,16 @@ AramOverlayData\overlay.log
   "BenchPitchX": 0.0315,
   "BenchY": 0.090,
   "AllyX": 0.180,
+  "AllyCenterY": 0.390,
   "AllyFirstY": 0.386,
-  "AllyPitchY": 0.093,
+  "AllyPitchY": 0.115,
   "BadgeFontRatio": 0.0165,
   "ShowAllyRows": true,
   "HideWhenNotForeground": true
 }
 ```
 
-坐标都是相对客户端客户区的比例（0–1）。顶部席位按客户端宽度自动选择四档布局（1920/1600 实测，1280/1024 外推），`BenchFirstX`、`BenchPitchX` 仅作为旧版/预览回退。队友行使用 `AllyX`、`AllyFirstY`、`AllyPitchY`。若位置有偏移，用托盘「预览 Overlay」对照调整：
+坐标都是相对客户端客户区的比例（0–1）。顶部席位按客户端宽度自动选择四档布局（1920/1600 实测，1280/1024 外推）。队友行按实际人数居中：`AllyCenterY` 为中心 Y，`AllyPitchY` 为行距，人数少时自动向中间收拢。
 
 - `BenchFirstX`：第一个席位中心 X；
 - `BenchPitchX`：席位间距（相对宽度）；

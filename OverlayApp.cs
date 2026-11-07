@@ -469,9 +469,18 @@ namespace AramOverlay
                 }
                 else
                 {
-                    // Keep the previous ratings through the 1-2s OCR refresh window.
-                    // Hide only after the augment cards have been gone for a while.
-                    if ((DateTime.Now - _augmentLastMatchAt).TotalSeconds > 3.0)
+                    // Keep the previous ratings through the 1-2s OCR refresh window,
+                    // but close immediately once the augment cards are actually gone.
+                    bool anyText = false;
+                    for (int i = 0; i < lines.Count; i++)
+                    {
+                        if (lines[i] != null && !string.IsNullOrEmpty(lines[i].Text) && lines[i].Score > 0.25)
+                        {
+                            anyText = true;
+                            break;
+                        }
+                    }
+                    if (!anyText || (DateTime.Now - _augmentLastMatchAt).TotalSeconds > 3.0)
                     {
                         _augmentCaptured = false;
                         _augmentOverlayCaptured = false;
@@ -539,6 +548,7 @@ namespace AramOverlay
             if (_config.ShowAllyRows)
             {
                 int teamRows = Math.Min(_config.AllyRows, session.Team.Count);
+                double allyFirst = _config.AllyCenterY - (teamRows - 1) * _config.AllyPitchY / 2.0;
                 for (int i = 0; i < teamRows; i++)
                 {
                     TeamMember member = session.Team[i];
@@ -547,7 +557,7 @@ namespace AramOverlay
                     {
                         continue;
                     }
-                    double y = _config.AllyFirstY + i * _config.AllyPitchY;
+                    double y = allyFirst + i * _config.AllyPitchY;
                     ChampionStat stat = _data.Get(championId);
                     double? rate = stat == null ? (double?)null : stat.WinRate;
                     string text = "胜率" + _data.GetWinRateText(championId);
@@ -585,9 +595,10 @@ namespace AramOverlay
             if (_config.ShowAllyRows)
             {
                 double[] ally = new double[] { 0.513, 0.470, 0.498, 0.522, 0.480 };
+                double previewFirst = _config.AllyCenterY - (ally.Length - 1) * _config.AllyPitchY / 2.0;
                 for (int i = 0; i < _config.AllyRows && i < ally.Length; i++)
                 {
-                    double y = _config.AllyFirstY + i * _config.AllyPitchY;
+                    double y = previewFirst + i * _config.AllyPitchY;
                     BadgeItem item = new BadgeItem(_config.AllyX, y, (ally[i] * 100).ToString("0.0") + "%", ally[i]);
                     item.LeftAlign = true;
                     item.TopAlign = true;

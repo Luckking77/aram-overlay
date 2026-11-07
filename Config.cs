@@ -21,6 +21,7 @@ namespace AramOverlay
 
         public double AllyX { get; set; }
         public double AllyFirstY { get; set; }
+        public double AllyCenterY { get; set; }
         public double AllyPitchY { get; set; }
         public int AllyRows { get; set; }
 
@@ -36,7 +37,7 @@ namespace AramOverlay
             FallbackDataUrl = "https://cdn.jsdelivr.net/gh/Luckking77/aram-data@main/data/latest.json";
             OcrCommand = "";
             RefreshMinutes = 60;
-            LayoutVersion = 6;
+            LayoutVersion = 7;
 
             BenchFirstX = 0.292;
             BenchPitchX = 0.0315;
@@ -45,7 +46,8 @@ namespace AramOverlay
 
             AllyX = 0.180;
             AllyFirstY = 0.386;
-            AllyPitchY = 0.093;
+            AllyCenterY = 0.390;
+            AllyPitchY = 0.115;
             AllyRows = 5;
 
             BadgeFontRatio = 0.0165;
@@ -172,6 +174,13 @@ namespace AramOverlay
             {
                 AllyFirstY = 0.386;
                 LayoutVersion = 6;
+            }
+
+            if (LayoutVersion < 7)
+            {
+                AllyCenterY = 0.390;
+                AllyPitchY = 0.115;
+                LayoutVersion = 7;
             }
 
             if (string.IsNullOrEmpty(DataUrl))
