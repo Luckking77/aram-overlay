@@ -86,7 +86,7 @@ namespace AramOverlay
             _pollTimer.Start();
 
             DispatcherTimer augmentTimer = new DispatcherTimer();
-            augmentTimer.Interval = TimeSpan.FromMilliseconds(1200);
+            augmentTimer.Interval = TimeSpan.FromMilliseconds(500);
             augmentTimer.Tick += delegate { ScanAugmentsAsync(); };
             augmentTimer.Start();
 
