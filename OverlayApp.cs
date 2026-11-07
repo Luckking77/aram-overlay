@@ -305,7 +305,12 @@ namespace AramOverlay
 
                 _league.EnsureConnected();
                 string phase = await _league.GetPhaseAsync();
-                _lastPhase = phase == null ? "" : phase;
+                string phaseText = phase == null ? "" : phase;
+                if (!string.Equals(_lastPhase, phaseText, StringComparison.Ordinal))
+                {
+                    _lastPhase = phaseText;
+                    Log("phase=" + (phaseText.Length == 0 ? "null" : phaseText));
+                }
                 if (phase == null || !string.Equals(phase, "ChampSelect", StringComparison.OrdinalIgnoreCase))
                 {
                     _capturedThisChampSelect = false;
