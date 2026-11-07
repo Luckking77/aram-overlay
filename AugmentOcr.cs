@@ -338,6 +338,27 @@ namespace AramOverlay
             List<AugmentOcrLine> batch = RunBatchCommand(command, paths);
             if (batch.Count == 3)
             {
+                int valid = 0;
+                for (int i = 0; i < 3; i++)
+                {
+                    if (batch[i] != null && !string.IsNullOrEmpty(batch[i].Text) && batch[i].Score > 0.0)
+                    {
+                        valid++;
+                    }
+                }
+                if (valid >= 2)
+                {
+                    return batch;
+                }
+
+                // A card title can be missed in a batch; retry only the missing crops.
+                for (int i = 0; i < 3; i++)
+                {
+                    if (batch[i] == null || string.IsNullOrEmpty(batch[i].Text) || batch[i].Score <= 0.0)
+                    {
+                        batch[i] = RunCommand(command, paths[i]);
+                    }
+                }
                 return batch;
             }
 
