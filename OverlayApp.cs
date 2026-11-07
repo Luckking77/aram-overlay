@@ -410,7 +410,7 @@ namespace AramOverlay
                     }
                     matched++;
                     double rate = fit.Score / 100.0;
-                    badges.Add(new BadgeItem(centers[i], 0.640, fit.Rating + " " + fit.Score.ToString(), rate));
+                    badges.Add(new BadgeItem(centers[i], 0.600, fit.Rating + " " + fit.Score.ToString(), rate));
                 }
 
                 if (matched >= 2)
