@@ -33,6 +33,7 @@ $cscArgs = @(
     '/platform:anycpu',
     '/langversion:5',
     '/optimize+',
+    ('/win32manifest:' + (Join-Path $PSScriptRoot 'app.manifest')),
     ('/out:' + $out)
 )
 foreach ($ref in $refs) {

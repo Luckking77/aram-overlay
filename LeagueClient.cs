@@ -20,7 +20,7 @@ namespace AramOverlay
             Process[] processes = Process.GetProcessesByName("LeagueClientUx");
             if (processes == null || processes.Length == 0)
             {
-                return null;
+                return FindByWindowClass();
             }
 
             HashSet<uint> pids = new HashSet<uint>();
@@ -102,6 +102,49 @@ namespace AramOverlay
                 }
             }
 
+            return best ?? FindByWindowClass();
+        }
+
+        private static LeagueWindow FindByWindowClass()
+        {
+            LeagueWindow best = null;
+            long bestArea = 0;
+            Native.EnumWindows(delegate(IntPtr hwnd, IntPtr lparam)
+            {
+                if (!Native.IsWindowVisible(hwnd) || Native.IsIconic(hwnd))
+                {
+                    return true;
+                }
+                StringBuilder className = new StringBuilder(128);
+                Native.GetClassName(hwnd, className, className.Capacity);
+                string cls = className.ToString();
+                if (cls != "RCLIENT" && cls != "Chrome_WidgetWin_0")
+                {
+                    return true;
+                }
+                StringBuilder title = new StringBuilder(256);
+                Native.GetWindowText(hwnd, title, title.Capacity);
+                if (title.ToString().IndexOf("League of Legends", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    return true;
+                }
+                Native.RECT rect = Native.GetClientRectOnScreen(hwnd);
+                int width = rect.Right - rect.Left;
+                int height = rect.Bottom - rect.Top;
+                if (width < 640 || height < 480)
+                {
+                    return true;
+                }
+                long area = (long)width * (long)height;
+                if (area > bestArea)
+                {
+                    bestArea = area;
+                    best = new LeagueWindow();
+                    best.Handle = hwnd;
+                    best.ClientRect = rect;
+                }
+                return true;
+            }, IntPtr.Zero);
             return best;
         }
 
@@ -114,6 +157,18 @@ namespace AramOverlay
             }
             uint pid;
             Native.GetWindowThreadProcessId(hwnd, out pid);
+            StringBuilder className = new StringBuilder(128);
+            Native.GetClassName(hwnd, className, className.Capacity);
+            string cls = className.ToString();
+            if (cls == "RCLIENT" || cls == "Chrome_WidgetWin_0")
+            {
+                StringBuilder title = new StringBuilder(256);
+                Native.GetWindowText(hwnd, title, title.Capacity);
+                if (title.ToString().IndexOf("League of Legends", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
             try
             {
                 Process process = Process.GetProcessById((int)pid);
@@ -287,6 +342,40 @@ namespace AramOverlay
                         }
                     }
                     dir = Path.GetDirectoryName(dir);
+                }
+            }
+
+            string[] candidates = new string[]
+            {
+                @"C:\Program Files (x86)\Tencent\LoL\LOL(26)\LeagueClient\lockfile",
+                @"C:\Program Files\Tencent\LoL\LOL(26)\LeagueClient\lockfile",
+                @"C:\Riot Games\League of Legends\lockfile",
+                @"E:\Riot Games\League of Legends (PBE)\lockfile"
+            };
+            for (int i = 0; i < candidates.Length; i++)
+            {
+                try
+                {
+                    if (!File.Exists(candidates[i]))
+                    {
+                        continue;
+                    }
+                    string text = File.ReadAllText(candidates[i]).Trim();
+                    string[] parts = text.Split(':');
+                    if (parts.Length < 5)
+                    {
+                        continue;
+                    }
+                    int parsedPort;
+                    if (int.TryParse(parts[2], out parsedPort) && !string.IsNullOrEmpty(parts[3]))
+                    {
+                        port = parsedPort;
+                        token = parts[3];
+                        return true;
+                    }
+                }
+                catch
+                {
                 }
             }
 
