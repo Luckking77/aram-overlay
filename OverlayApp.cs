@@ -26,6 +26,7 @@ namespace AramOverlay
         private readonly DateTime[] _augmentSlotFlashUntil = new DateTime[3];
         private readonly int[] _lastAugmentIds = new int[] { -1, -1, -1 };
         private readonly int[] _lastAugmentScores = new int[] { -1, -1, -1 };
+        private DateTime _augmentLastMatchAt;
         private WinForms.NotifyIcon _tray;
         private DispatcherTimer _pollTimer;
         private DispatcherTimer _dataTimer;
@@ -81,7 +82,16 @@ namespace AramOverlay
             }
             RegisterHotkeys();
 
-            CreateTray();
+            try
+            {
+                CreateTray();
+                Log("tray created");
+            }
+            catch (Exception ex)
+            {
+                Log("tray error: " + ex.ToString());
+                MessageBox.Show("托盘图标创建失败：" + ex.Message, "ARAM Overlay");
+            }
 
             _pollTimer = new DispatcherTimer();
             _pollTimer.Interval = TimeSpan.FromMilliseconds(1000);
@@ -202,6 +212,7 @@ namespace AramOverlay
 
             _tray.ContextMenuStrip = menu;
             _tray.DoubleClick += delegate { SetPreview(!_preview); };
+            Log("tray icon initialized");
         }
 
         private async void RefreshDataAsync()
@@ -428,6 +439,7 @@ namespace AramOverlay
 
                 if (matched >= 2)
                 {
+                    _augmentLastMatchAt = DateTime.Now;
                     _augmentOverlay.SetBadges(badges);
                     _augmentOverlay.ShowOverlay(game);
                     if (!_augmentCaptured)
@@ -457,9 +469,14 @@ namespace AramOverlay
                 }
                 else
                 {
-                    _augmentCaptured = false;
-                    _augmentOverlayCaptured = false;
-                    _augmentOverlay.HideOverlay();
+                    // Keep the previous ratings through the 1-2s OCR refresh window.
+                    // Hide only after the augment cards have been gone for a while.
+                    if ((DateTime.Now - _augmentLastMatchAt).TotalSeconds > 3.0)
+                    {
+                        _augmentCaptured = false;
+                        _augmentOverlayCaptured = false;
+                        _augmentOverlay.HideOverlay();
+                    }
                 }
                 screen.Dispose();
             }

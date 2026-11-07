@@ -53,6 +53,18 @@ exe 没有代码签名证书，所以 SmartScreen 会提示。当前只能：
 
 要彻底去掉提示，需要购买/申请 **代码签名证书** 并对 exe 签名，代码层面无法绕过。
 
+### 不想处理 SmartScreen：本机编译
+
+在有源码的目录运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run.ps1
+```
+
+`run.ps1` 会用 Windows 自带 `csc.exe` 在本机重新编译并启动。**本机编译出的 exe 没有下载标记**，通常不会再触发 SmartScreen/MOTW。仍然未签名，但至少不是“下载的未知 exe”。
+
+如果 ZIP 本身被锁定，先右键 ZIP → 属性 → 解除锁定，或解压后运行 `unblock.ps1`。
+
 队友行会在名字后追加两行：
 
 ```text
