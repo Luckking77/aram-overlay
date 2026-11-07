@@ -702,6 +702,15 @@ namespace AramOverlay
                 _tray.Dispose();
             }
             _league.Disconnect();
+            AugmentOcr.Shutdown();
+            if (_overlay != null)
+            {
+                _overlay.HideOverlay();
+            }
+            if (_augmentOverlay != null)
+            {
+                _augmentOverlay.HideOverlay();
+            }
             base.OnExit(e);
         }
     }

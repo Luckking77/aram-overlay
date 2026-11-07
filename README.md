@@ -112,7 +112,7 @@ AramOverlayData\overlay.log
 
 - 数据：`data/augment-fit.json`（国服整体海克斯胜率 + 国服英雄选取率，自研适配分）；
 - 卡牌区域：1920 用实测区域，2560×1440 用 HexBox 预设区域；评分放在卡片内底部空白处，不压标题/描述；OCR 匹配到 2 张以上会自动保存 `augment-raw-*.png` 和 `augment-overlay-*.png`；
-- 刷新：每 500ms 扫描，3 张卡一次批量 OCR（单进程 `--images`），比逐张调用快约 4 倍；
+- 刷新：每 500ms 扫描；优先使用常驻 `worker`（模型不重复加载），失败时回退到 3 张卡一次批量 `--images`；
 - OCR：外接命令，默认查找 exe 同级 `ocr\hexbox-ocr.exe`；也可配置：
 
 ```json

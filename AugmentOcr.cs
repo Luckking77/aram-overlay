@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Web.Script.Serialization;
 
 namespace AramOverlay
@@ -22,6 +24,11 @@ namespace AramOverlay
 
     public static class AugmentOcr
     {
+        private static Process _worker;
+        private static StreamWriter _workerInput;
+        private static readonly ConcurrentQueue<string> WorkerLines = new ConcurrentQueue<string>();
+        private static readonly object WorkerLock = new object();
+
         // Card title regions, calibrated against real CN augment screens.
         private static readonly int[,] CardRects1920 = new int[,]
         {
@@ -62,12 +69,218 @@ namespace AramOverlay
             return "";
         }
 
+        public static void Shutdown()
+        {
+            lock (WorkerLock)
+            {
+                try
+                {
+                    if (_workerInput != null)
+                    {
+                        _workerInput.Close();
+                    }
+                }
+                catch
+                {
+                }
+                try
+                {
+                    if (_worker != null && !_worker.HasExited)
+                    {
+                        _worker.Kill();
+                    }
+                }
+                catch
+                {
+                }
+                _worker = null;
+                _workerInput = null;
+            }
+        }
+
+        private static bool EnsureWorker(string command)
+        {
+            lock (WorkerLock)
+            {
+                if (_worker != null && !_worker.HasExited)
+                {
+                    return true;
+                }
+                try
+                {
+                    ProcessStartInfo startInfo = new ProcessStartInfo();
+                    startInfo.FileName = command;
+                    startInfo.Arguments = "worker";
+                    startInfo.WorkingDirectory = Path.GetDirectoryName(command);
+                    startInfo.UseShellExecute = false;
+                    startInfo.CreateNoWindow = true;
+                    startInfo.RedirectStandardInput = true;
+                    startInfo.RedirectStandardOutput = true;
+                    startInfo.RedirectStandardError = true;
+                    startInfo.StandardOutputEncoding = Encoding.UTF8;
+                    startInfo.StandardErrorEncoding = Encoding.UTF8;
+
+                    _worker = new Process();
+                    _worker.StartInfo = startInfo;
+                    _worker.OutputDataReceived += delegate(object sender, DataReceivedEventArgs e)
+                    {
+                        if (!string.IsNullOrEmpty(e.Data))
+                        {
+                            WorkerLines.Enqueue(e.Data);
+                        }
+                    };
+                    _worker.Start();
+                    _worker.BeginOutputReadLine();
+                    _workerInput = _worker.StandardInput;
+                    return true;
+                }
+                catch
+                {
+                    _worker = null;
+                    _workerInput = null;
+                    return false;
+                }
+            }
+        }
+
+        private static List<AugmentOcrLine> TryWorker(string command)
+        {
+            List<AugmentOcrLine> result = new List<AugmentOcrLine>();
+            if (!EnsureWorker(command) || _workerInput == null)
+            {
+                return result;
+            }
+
+            string ignored;
+            while (WorkerLines.TryDequeue(out ignored))
+            {
+            }
+
+            try
+            {
+                _workerInput.WriteLine("{}");
+                _workerInput.Flush();
+            }
+            catch
+            {
+                return result;
+            }
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            while (stopwatch.ElapsedMilliseconds < 1600)
+            {
+                string line;
+                if (WorkerLines.TryDequeue(out line))
+                {
+                    result = ParseWorkerLine(line);
+                    if (result.Count == 3)
+                    {
+                        return result;
+                    }
+                }
+                Thread.Sleep(25);
+            }
+            return result;
+        }
+
+        private static List<AugmentOcrLine> ParseWorkerLine(string line)
+        {
+            List<AugmentOcrLine> result = new List<AugmentOcrLine>();
+            try
+            {
+                JavaScriptSerializer serializer = new JavaScriptSerializer();
+                Dictionary<string, object> root = serializer.DeserializeObject(line) as Dictionary<string, object>;
+                if (root == null)
+                {
+                    return result;
+                }
+
+                object payloadsValue;
+                if (root.TryGetValue("payloads", out payloadsValue) && payloadsValue != null)
+                {
+                    object[] payloads = payloadsValue as object[];
+                    if (payloads != null)
+                    {
+                        for (int i = 0; i < payloads.Length; i++)
+                        {
+                            result.Add(ReadLine(payloads[i] as Dictionary<string, object>));
+                        }
+                    }
+                }
+
+                if (result.Count == 0)
+                {
+                    object inferenceValue;
+                    if (root.TryGetValue("ocr_inference", out inferenceValue) && inferenceValue != null)
+                    {
+                        Dictionary<string, object> inference = inferenceValue as Dictionary<string, object>;
+                        object slotsValue;
+                        if (inference != null && inference.TryGetValue("slots", out slotsValue) && slotsValue != null)
+                        {
+                            object[] slots = slotsValue as object[];
+                            if (slots != null)
+                            {
+                                for (int i = 0; i < slots.Length; i++)
+                                {
+                                    Dictionary<string, object> slot = slots[i] as Dictionary<string, object>;
+                                    if (slot == null)
+                                    {
+                                        continue;
+                                    }
+                                    AugmentOcrLine item = new AugmentOcrLine();
+                                    object textValue;
+                                    if (slot.TryGetValue("raw_text", out textValue) && textValue != null)
+                                    {
+                                        item.Text = Convert.ToString(textValue);
+                                    }
+                                    if (string.IsNullOrEmpty(item.Text) && slot.TryGetValue("match_name", out textValue) && textValue != null)
+                                    {
+                                        item.Text = Convert.ToString(textValue);
+                                    }
+                                    object scoreValue;
+                                    if (slot.TryGetValue("confidence", out scoreValue) && scoreValue != null)
+                                    {
+                                        double parsedScore;
+                                        if (double.TryParse(Convert.ToString(scoreValue), out parsedScore))
+                                        {
+                                            item.Score = parsedScore;
+                                        }
+                                    }
+                                    result.Add(item);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                return new List<AugmentOcrLine>();
+            }
+            return result;
+        }
+
         public static List<AugmentOcrLine> Scan(Bitmap screen, Native.RECT game, string command)
         {
             List<AugmentOcrLine> result = new List<AugmentOcrLine>();
             if (screen == null || string.IsNullOrEmpty(command) || !File.Exists(command))
             {
                 return result;
+            }
+
+            // Prefer the warm persistent worker; it avoids a ~1.2s cold start per scan.
+            List<AugmentOcrLine> warm = TryWorker(command);
+            int warmTexts = 0;
+            for (int i = 0; i < warm.Count; i++)
+            {
+                if (!string.IsNullOrEmpty(warm[i].Text) && warm[i].Score > 0.0)
+                {
+                    warmTexts++;
+                }
+            }
+            if (warm.Count == 3 && warmTexts >= 2)
+            {
+                return warm;
             }
 
             int gameWidth = game.Right - game.Left;
