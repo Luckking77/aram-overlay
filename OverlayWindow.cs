@@ -145,7 +145,7 @@ namespace AramOverlay
                 text.FontFamily = font;
                 text.FontWeight = FontWeights.SemiBold;
                 text.FontSize = fontSize;
-                text.Foreground = GetBrush(badge.WinRate);
+                text.Foreground = badge.Highlight ? Brushes.Gold : GetBrush(badge.WinRate);
                 text.IsHitTestVisible = false;
 
                 DropShadowEffect shadow = new DropShadowEffect();

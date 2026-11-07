@@ -30,6 +30,10 @@ namespace AramOverlay
         private static readonly object WorkerLock = new object();
         private static int _workerFailures;
         private static bool _workerDisabled;
+        private static string _lastSignature = "";
+        private static List<AugmentOcrLine> _lastLines = new List<AugmentOcrLine>();
+
+        public static bool LastChanged { get; private set; }
 
         // Card title regions, calibrated against real CN augment screens.
         private static readonly int[,] CardRects1920 = new int[,]
@@ -282,20 +286,8 @@ namespace AramOverlay
             }
 
             // Prefer the warm persistent worker; it avoids a ~1.2s cold start per scan.
-            List<AugmentOcrLine> warm = TryWorker(command);
-            int warmTexts = 0;
-            for (int i = 0; i < warm.Count; i++)
-            {
-                if (!string.IsNullOrEmpty(warm[i].Text) && warm[i].Score > 0.0)
-                {
-                    warmTexts++;
-                }
-            }
-            if (warm.Count == 3 && warmTexts >= 2)
-            {
-                return warm;
-            }
-
+            // Disabled: in-game the worker's full-screen pipeline often falls back and
+            // adds a 0.7s wait before the batch path, which made refreshes slower.
             int gameWidth = game.Right - game.Left;
             int gameHeight = game.Bottom - game.Top;
             if (gameWidth <= 0 || gameHeight <= 0)
@@ -313,6 +305,7 @@ namespace AramOverlay
             double sy = gameHeight / (double)baseHeight;
 
             List<string> paths = new List<string>();
+            ulong signature = 1469598103934665603UL;
             for (int i = 0; i < 3; i++)
             {
                 int x = (int)Math.Round(cardRects[i, 0] * sx);
@@ -330,9 +323,19 @@ namespace AramOverlay
                 {
                     graphics.DrawImage(screen, new Rectangle(0, 0, w, h), new Rectangle(x, y, w, h), GraphicsUnit.Pixel);
                     crop.Save(path, ImageFormat.Png);
+                    signature = AddSignature(signature, crop);
                 }
                 paths.Add(path);
             }
+
+            string signatureText = signature.ToString("x16");
+            if (signatureText == _lastSignature && _lastLines.Count == 3)
+            {
+                LastChanged = false;
+                return new List<AugmentOcrLine>(_lastLines);
+            }
+            _lastSignature = signatureText;
+            LastChanged = true;
 
             // One sidecar process for all three cards is much faster than three startups.
             List<AugmentOcrLine> batch = RunBatchCommand(command, paths);
@@ -348,6 +351,7 @@ namespace AramOverlay
                 }
                 if (valid >= 2)
                 {
+                    Remember(batch);
                     return batch;
                 }
 
@@ -359,6 +363,7 @@ namespace AramOverlay
                         batch[i] = RunCommand(command, paths[i]);
                     }
                 }
+                Remember(batch);
                 return batch;
             }
 
@@ -366,7 +371,42 @@ namespace AramOverlay
             {
                 result.Add(RunCommand(command, paths[i]));
             }
+            Remember(result);
             return result;
+        }
+
+        private static ulong AddSignature(ulong hash, Bitmap bitmap)
+        {
+            int stepX = Math.Max(4, bitmap.Width / 24);
+            int stepY = Math.Max(3, bitmap.Height / 12);
+            for (int y = 0; y < bitmap.Height; y += stepY)
+            {
+                for (int x = 0; x < bitmap.Width; x += stepX)
+                {
+                    Color color = bitmap.GetPixel(x, y);
+                    hash ^= (ulong)(color.R | (color.G << 8) | (color.B << 16));
+                    hash *= 1099511628211UL;
+                }
+            }
+            return hash;
+        }
+
+        private static void Remember(List<AugmentOcrLine> lines)
+        {
+            if (lines == null || lines.Count != 3)
+            {
+                return;
+            }
+            List<AugmentOcrLine> copy = new List<AugmentOcrLine>();
+            for (int i = 0; i < lines.Count; i++)
+            {
+                AugmentOcrLine source = lines[i] ?? new AugmentOcrLine();
+                AugmentOcrLine item = new AugmentOcrLine();
+                item.Text = source.Text;
+                item.Score = source.Score;
+                copy.Add(item);
+            }
+            _lastLines = copy;
         }
 
         private static List<AugmentOcrLine> RunBatchCommand(string command, List<string> paths)

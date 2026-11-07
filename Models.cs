@@ -86,6 +86,7 @@ namespace AramOverlay
         public double? WinRate { get; set; }
         public bool LeftAlign { get; set; }
         public bool TopAlign { get; set; }
+        public bool Highlight { get; set; }
 
         public BadgeItem(double xRatio, double yRatio, string text, double? winRate)
         {

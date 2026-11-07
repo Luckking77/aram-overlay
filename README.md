@@ -132,8 +132,6 @@ AramOverlayData\overlay.log
 - 计算 Wilson 95% 胜率下界用于内部置信判断；
 - 只显示在队友名字后，不弹独立面板。
 
-> 这是本项目的自研统计，**不是 Hexdata 的原创海斗分**。Hexdata 海斗分需要登录/授权，当前没有公开 API，未接入。
-
 ## 数据
 
 - 仓库：`https://github.com/Luckking77/aram-data`

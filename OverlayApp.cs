@@ -23,6 +23,7 @@ namespace AramOverlay
         private bool _augmentScanning;
         private bool _augmentCaptured;
         private bool _augmentOverlayCaptured;
+        private DateTime _augmentFlashUntil;
         private WinForms.NotifyIcon _tray;
         private DispatcherTimer _pollTimer;
         private DispatcherTimer _dataTimer;
@@ -410,11 +411,17 @@ namespace AramOverlay
                     }
                     matched++;
                     double rate = fit.Score / 100.0;
-                    badges.Add(new BadgeItem(centers[i], 0.600, fit.Rating + " " + fit.Score.ToString(), rate));
+                    BadgeItem item = new BadgeItem(centers[i], 0.600, fit.Rating + " " + fit.Score.ToString(), rate);
+                    item.Highlight = DateTime.Now < _augmentFlashUntil;
+                    badges.Add(item);
                 }
 
                 if (matched >= 2)
                 {
+                    if (AugmentOcr.LastChanged)
+                    {
+                        _augmentFlashUntil = DateTime.Now.AddSeconds(2);
+                    }
                     _augmentOverlay.SetBadges(badges);
                     _augmentOverlay.ShowOverlay(game);
                     if (!_augmentCaptured)
