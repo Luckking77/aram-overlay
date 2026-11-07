@@ -9,6 +9,7 @@ namespace AramOverlay
     {
         public string DataUrl { get; set; }
         public string FallbackDataUrl { get; set; }
+        public string OcrCommand { get; set; }
         public int RefreshMinutes { get; set; }
         public int LayoutVersion { get; set; }
 
@@ -33,6 +34,7 @@ namespace AramOverlay
         {
             DataUrl = "https://raw.githubusercontent.com/Luckking77/aram-data/main/data/latest.json";
             FallbackDataUrl = "https://cdn.jsdelivr.net/gh/Luckking77/aram-data@main/data/latest.json";
+            OcrCommand = "";
             RefreshMinutes = 60;
             LayoutVersion = 5;
 
@@ -173,6 +175,10 @@ namespace AramOverlay
             if (string.IsNullOrEmpty(FallbackDataUrl))
             {
                 FallbackDataUrl = "https://cdn.jsdelivr.net/gh/Luckking77/aram-data@main/data/latest.json";
+            }
+            if (OcrCommand == null)
+            {
+                OcrCommand = "";
             }
             if (RefreshMinutes < 5)
             {

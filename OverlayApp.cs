@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Threading;
@@ -15,6 +16,11 @@ namespace AramOverlay
         private DataStore _data;
         private LeagueApi _league;
         private OverlayWindow _overlay;
+        private OverlayWindow _augmentOverlay;
+        private AugmentData _augmentData;
+        private string _augmentOcrCommand;
+        private int _lastChampionId;
+        private bool _augmentScanning;
         private WinForms.NotifyIcon _tray;
         private DispatcherTimer _pollTimer;
         private DispatcherTimer _dataTimer;
@@ -52,6 +58,14 @@ namespace AramOverlay
             _league = new LeagueApi();
             _overlay = new OverlayWindow();
             _overlay.SetFontRatio(_config.BadgeFontRatio);
+            _augmentOverlay = new OverlayWindow();
+            _augmentOverlay.SetFontRatio(0.022);
+            _augmentData = AugmentData.Load(FindAugmentDataPath());
+            _augmentOcrCommand = !string.IsNullOrEmpty(_config.OcrCommand)
+                ? _config.OcrCommand
+                : AugmentOcr.FindCommand();
+            Log("augment data champions=" + (_augmentData == null ? 0 : _augmentData.ChampionCount));
+            Log("ocr command=" + (_augmentOcrCommand ?? ""));
 
             _hotkeyHandle = new WindowInteropHelper(_overlay).EnsureHandle();
             Native.MakeClickThrough(_hotkeyHandle);
@@ -68,6 +82,11 @@ namespace AramOverlay
             _pollTimer.Interval = TimeSpan.FromMilliseconds(1000);
             _pollTimer.Tick += delegate { PollAsync(); };
             _pollTimer.Start();
+
+            DispatcherTimer augmentTimer = new DispatcherTimer();
+            augmentTimer.Interval = TimeSpan.FromMilliseconds(1200);
+            augmentTimer.Tick += delegate { ScanAugmentsAsync(); };
+            augmentTimer.Start();
 
             _dataTimer = new DispatcherTimer();
             _dataTimer.Interval = TimeSpan.FromMinutes(Math.Max(5, _config.RefreshMinutes));
@@ -272,6 +291,21 @@ namespace AramOverlay
                     return;
                 }
 
+                _augmentOverlay.HideOverlay();
+                int localCell = session.LocalPlayerCellId;
+                for (int i = 0; i < session.Team.Count; i++)
+                {
+                    if (session.Team[i].CellId == localCell && session.Team[i].ChampionId > 0)
+                    {
+                        _lastChampionId = session.Team[i].ChampionId;
+                        break;
+                    }
+                }
+                if (_lastChampionId <= 0 && session.Team.Count > 0 && session.Team[0].ChampionId > 0)
+                {
+                    _lastChampionId = session.Team[0].ChampionId;
+                }
+
                 if (!_capturedThisChampSelect)
                 {
                     _capturedThisChampSelect = true;
@@ -292,6 +326,106 @@ namespace AramOverlay
             finally
             {
                 _polling = false;
+            }
+        }
+
+        private static string FindAugmentDataPath()
+        {
+            string[] candidates = new string[]
+            {
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "augment-fit.json"),
+                Path.Combine(AppConfig.ConfigDir, "augment-fit.json"),
+                @"C:\Users\50353\Desktop\dsh\aram-overlay\data\augment-fit.json"
+            };
+            for (int i = 0; i < candidates.Length; i++)
+            {
+                if (File.Exists(candidates[i]))
+                {
+                    return candidates[i];
+                }
+            }
+            return "";
+        }
+
+        private async void ScanAugmentsAsync()
+        {
+            if (_augmentScanning || _demo)
+            {
+                return;
+            }
+            if (_lastChampionId <= 0 || _augmentData == null || _augmentData.ChampionCount == 0 ||
+                string.IsNullOrEmpty(_augmentOcrCommand) || !File.Exists(_augmentOcrCommand))
+            {
+                _augmentOverlay.HideOverlay();
+                return;
+            }
+
+            LeagueWindow game = GameWindowFinder.Find();
+            if (game == null || !game.IsValid)
+            {
+                _augmentOverlay.HideOverlay();
+                return;
+            }
+
+            _augmentScanning = true;
+            try
+            {
+                int width = game.ClientRect.Right - game.ClientRect.Left;
+                int height = game.ClientRect.Bottom - game.ClientRect.Top;
+                if (width <= 0 || height <= 0)
+                {
+                    _augmentOverlay.HideOverlay();
+                    return;
+                }
+
+                System.Drawing.Bitmap screen = new System.Drawing.Bitmap(width, height);
+                using (System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(screen))
+                {
+                    graphics.CopyFromScreen(game.ClientRect.Left, game.ClientRect.Top, 0, 0, screen.Size);
+                }
+
+                List<AugmentOcrLine> lines = await Task.Run(delegate
+                {
+                    return AugmentOcr.Scan(screen, game.ClientRect, _augmentOcrCommand);
+                });
+                screen.Dispose();
+
+                List<BadgeItem> badges = new List<BadgeItem>();
+                double[] centers = new double[] { 0.3083, 0.5000, 0.6922 };
+                int matched = 0;
+                for (int i = 0; i < lines.Count && i < centers.Length; i++)
+                {
+                    if (lines[i] == null || lines[i].Score < 0.25 || string.IsNullOrEmpty(lines[i].Text))
+                    {
+                        continue;
+                    }
+                    AugmentFit fit = _augmentData.Match(_lastChampionId, lines[i].Text);
+                    if (fit == null)
+                    {
+                        continue;
+                    }
+                    matched++;
+                    double rate = fit.Score / 100.0;
+                    badges.Add(new BadgeItem(centers[i], 0.465, fit.Rating + " " + fit.Score.ToString(), rate));
+                }
+
+                if (matched >= 2)
+                {
+                    _augmentOverlay.SetBadges(badges);
+                    _augmentOverlay.ShowOverlay(game);
+                }
+                else
+                {
+                    _augmentOverlay.HideOverlay();
+                }
+            }
+            catch
+            {
+                _augmentOverlay.HideOverlay();
+            }
+            finally
+            {
+                _augmentScanning = false;
             }
         }
 

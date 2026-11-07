@@ -21,6 +21,7 @@ data/overlay.log
 data/test-result.txt
 data/captures/
 data/config.json
+data/cache/
 
 # keep the seed data
 !data/latest.json

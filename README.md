@@ -79,6 +79,7 @@ AramOverlayData\overlay.log
 ```json
 {
   "DataUrl": "https://raw.githubusercontent.com/Luckking77/aram-data/main/data/latest.json",
+  "OcrCommand": "",
   "BenchFirstX": 0.292,
   "BenchPitchX": 0.0315,
   "BenchY": 0.090,
@@ -100,6 +101,26 @@ AramOverlayData\overlay.log
 - `AllyFirstY` / `AllyPitchY`：队友第一行 Y / 行距。
 
 改完保存，托盘「重新加载配置」或 `Ctrl+Shift+F11`。
+
+## 海克斯适配 Overlay（A+2）
+
+选人阶段记住当前英雄；进入游戏后，每 1.2 秒截取游戏客户区，按 HexBox 预设的 3 个海克斯卡标题区域做 OCR，匹配到至少 2 张卡时在卡片下方显示：
+
+```text
+顶级 76
+```
+
+- 数据：`data/augment-fit.json`（国服整体海克斯胜率 + 国服英雄选取率，自研适配分）；
+- 卡牌区域：复用 HexBox `augment_presets.json` 的 1920 布局并按游戏窗口缩放；
+- OCR：外接命令，默认查找 exe 同级 `ocr\hexbox-ocr.exe`；也可配置：
+
+```json
+"OcrCommand": "C:\\path\\to\\hexbox-ocr.exe"
+```
+
+- 评分/来源/许可与逆向说明见 [OCR-SOURCES.md](OCR-SOURCES.md)；
+- **OCR 后端不随包分发**，公开分发前必须替换为开源实现或取得授权；
+- 独占全屏可能无法置顶，建议无边框/窗口化。
 
 ## 队友近50场分析
 

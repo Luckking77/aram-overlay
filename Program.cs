@@ -21,6 +21,7 @@ namespace AramOverlay
                 bool test = false;
                 bool demo = false;
                 bool renderTest = false;
+                bool augmentTest = false;
                 if (args != null)
                 {
                     for (int i = 0; i < args.Length; i++)
@@ -37,7 +38,17 @@ namespace AramOverlay
                         {
                             renderTest = true;
                         }
+                        if (string.Equals(args[i], "--augment-test", StringComparison.OrdinalIgnoreCase))
+                        {
+                            augmentTest = true;
+                        }
                     }
+                }
+
+                if (augmentTest)
+                {
+                    RunAugmentTest();
+                    return;
                 }
 
                 if (test)
@@ -68,6 +79,74 @@ namespace AramOverlay
             catch (Exception ex)
             {
                 WriteFatal(ex);
+            }
+        }
+
+        private static void RunAugmentTest()
+        {
+            Console.WriteLine("augment-test: start");
+            string dataPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data", "augment-fit.json");
+            if (!File.Exists(dataPath))
+            {
+                dataPath = @"C:\Users\50353\Desktop\dsh\aram-overlay\data\augment-fit.json";
+            }
+            AugmentData data = AugmentData.Load(dataPath);
+            Console.WriteLine("augment-test: champions=" + data.ChampionCount);
+            List<AugmentFit> fits = data.GetForChampion(105);
+            if (fits.Count < 3)
+            {
+                Console.WriteLine("augment-test: no fit rows for champion 105");
+                return;
+            }
+            Console.WriteLine("augment-test: fit0=" + fits[0].Name + " norm=" + AugmentData.Normalize(fits[0].Name));
+            string hex = "";
+            for (int h = 0; h < fits[0].Name.Length && h < 8; h++)
+            {
+                hex += ((int)fits[0].Name[h]).ToString("x4") + " ";
+            }
+            Console.WriteLine("augment-test: fit0hex=" + hex);
+            Console.WriteLine("augment-test: direct=" + (data.Match(105, fits[0].Name) == null ? "-" : "ok"));
+            Console.WriteLine("augment-test: literal=" + (data.Match(105, "小蜜蜂！！！") == null ? "-" : "ok"));
+
+            string command = AugmentOcr.FindCommand();
+            Console.WriteLine("augment-test: ocr=" + command);
+            if (string.IsNullOrEmpty(command))
+            {
+                return;
+            }
+
+            int[] xs = new int[] { 462, 830, 1199 };
+            using (System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(1920, 1080))
+            using (System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(bitmap))
+            {
+                graphics.Clear(System.Drawing.Color.FromArgb(12, 18, 28));
+                using (System.Drawing.Font font = new System.Drawing.Font("Microsoft YaHei", 22, System.Drawing.FontStyle.Bold))
+                {
+                    for (int i = 0; i < 3; i++)
+                    {
+                        graphics.DrawString(fits[i].Name, font, System.Drawing.Brushes.White, xs[i] + 4, 438);
+                    }
+                }
+                Native.RECT rect = new Native.RECT();
+                rect.Left = 0;
+                rect.Top = 0;
+                rect.Right = 1920;
+                rect.Bottom = 1080;
+                List<AugmentOcrLine> lines = AugmentOcr.Scan(bitmap, rect, command);
+                for (int i = 0; i < lines.Count; i++)
+                {
+                    string ocrHex = "";
+                    for (int h = 0; h < lines[i].Text.Length && h < 8; h++)
+                    {
+                        ocrHex += ((int)lines[i].Text[h]).ToString("x4") + " ";
+                    }
+                    Console.WriteLine("augment-test: ocrhex=" + ocrHex);
+                    Console.WriteLine("augment-test: ocrnorm=" + AugmentData.Normalize(lines[i].Text));
+                    AugmentFit match = data.Match(105, lines[i].Text);
+                    Console.WriteLine("augment-test: [" + i + "] text=" + lines[i].Text +
+                        " score=" + lines[i].Score.ToString("0.00") +
+                        " match=" + (match == null ? "-" : match.Name + " " + match.Score + " " + match.Rating));
+                }
             }
         }
 
