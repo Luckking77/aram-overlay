@@ -22,6 +22,7 @@ namespace AramOverlay
         private int _lastChampionId;
         private bool _augmentScanning;
         private bool _augmentCaptured;
+        private bool _augmentOverlayCaptured;
         private WinForms.NotifyIcon _tray;
         private DispatcherTimer _pollTimer;
         private DispatcherTimer _dataTimer;
@@ -409,8 +410,7 @@ namespace AramOverlay
                     }
                     matched++;
                     double rate = fit.Score / 100.0;
-                    double badgeY = is1440p ? 0.155 : 0.045;
-                    badges.Add(new BadgeItem(centers[i], badgeY, fit.Rating + " " + fit.Score.ToString(), rate));
+                    badges.Add(new BadgeItem(centers[i], 0.640, fit.Rating + " " + fit.Score.ToString(), rate));
                 }
 
                 if (matched >= 2)
@@ -426,10 +426,26 @@ namespace AramOverlay
                         screen.Save(capture, System.Drawing.Imaging.ImageFormat.Png);
                         Log("augment raw saved: " + capture);
                     }
+                    if (!_augmentOverlayCaptured)
+                    {
+                        _augmentOverlayCaptured = true;
+                        System.Threading.Thread.Sleep(120);
+                        string dir = Path.Combine(AppConfig.ConfigDir, "captures");
+                        Directory.CreateDirectory(dir);
+                        string capture = Path.Combine(dir, "augment-overlay-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".png");
+                        using (System.Drawing.Bitmap withOverlay = new System.Drawing.Bitmap(width, height))
+                        using (System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(withOverlay))
+                        {
+                            graphics.CopyFromScreen(game.ClientRect.Left, game.ClientRect.Top, 0, 0, withOverlay.Size);
+                            withOverlay.Save(capture, System.Drawing.Imaging.ImageFormat.Png);
+                        }
+                        Log("augment overlay saved: " + capture);
+                    }
                 }
                 else
                 {
                     _augmentCaptured = false;
+                    _augmentOverlayCaptured = false;
                     _augmentOverlay.HideOverlay();
                 }
                 screen.Dispose();
