@@ -46,7 +46,7 @@ REA Evidence：
 - `inspect_artifact`：`ev_6105c177cca9a9c4927c1355d7233b66d47235a9eb74687177f8cf49b58a28cc`；
 - 静态清单 `compiled-ocr-manifest.json`：Nuitka 4.2，依赖 RapidFuzz、mss、numpy、onnxruntime、pillow；编译模块 `augment_pipeline`、`preset_ocr`、`service`、`worker`；
 - 模型：`ch_PP-OCRv4_rec.onnx`、`ch_PP-OCRv4_rec_int8.onnx`、`PP-OCRv5_mobile_rec.onnx`、`ppocr_keys_v1.txt`；
-- 预设：`data/augment_presets.json` 给出 1920/2560/3840/5120 的 3 个海克斯卡标题矩形；
+- 预设：`data/augment_presets.json` 给出 1920/2560/3840/5120 的 3 个海克斯卡标题矩形；本项目又按一张真实国服选卡截图（1920×1080）校准了标题区域和评分位置；
 - 运行观察：`hexbox-ocr.exe service --image <png>` 返回 JSON：
 
 ```json

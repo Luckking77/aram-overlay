@@ -22,12 +22,12 @@ namespace AramOverlay
 
     public static class AugmentOcr
     {
-        // 1920x1080 preset from HexBox OCR presets (see OCR-SOURCES.md).
+        // 1920x1080 card title regions, calibrated against a real CN augment screen.
         private static readonly int[,] CardRects = new int[,]
         {
-            { 462, 433, 260, 47 },
-            { 830, 433, 260, 47 },
-            { 1199, 433, 260, 47 }
+            { 300, 390, 310, 70 },
+            { 700, 390, 360, 70 },
+            { 1180, 390, 300, 70 }
         };
 
         public static string FindCommand()

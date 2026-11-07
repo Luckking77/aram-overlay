@@ -391,7 +391,7 @@ namespace AramOverlay
                 screen.Dispose();
 
                 List<BadgeItem> badges = new List<BadgeItem>();
-                double[] centers = new double[] { 0.3083, 0.5000, 0.6922 };
+                double[] centers = new double[] { 0.226, 0.445, 0.668 };
                 int matched = 0;
                 for (int i = 0; i < lines.Count && i < centers.Length; i++)
                 {
@@ -406,7 +406,7 @@ namespace AramOverlay
                     }
                     matched++;
                     double rate = fit.Score / 100.0;
-                    badges.Add(new BadgeItem(centers[i], 0.465, fit.Rating + " " + fit.Score.ToString(), rate));
+                    badges.Add(new BadgeItem(centers[i], 0.045, fit.Rating + " " + fit.Score.ToString(), rate));
                 }
 
                 if (matched >= 2)
